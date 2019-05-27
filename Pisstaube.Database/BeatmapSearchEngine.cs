@@ -21,8 +21,7 @@ namespace Pisstaube.Database
                 .DefaultIndex("pisstaube");
 
             _elasticClient = new ElasticClient(settings);
-            if (!_elasticClient.IndexExists("pisstaube").Exists)
-                _elasticClient.CreateIndex("pisstaube");
+            _elasticClient.CreateIndex("pisstaube");
         }
 
         public void IndexBeatmap(BeatmapSet set)
