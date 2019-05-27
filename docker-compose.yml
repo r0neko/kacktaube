@@ -41,21 +41,22 @@ services:
       - pisstaube_elastic_search_data:/usr/share/elasticsearch/data
     expose:
       - 9200
+    #ports:
+    #  - 9200:9200
 
   db:
     container_name: db
-    image: mariadb:10.4
+    image: mysql:5.7.23
     command: --default-authentication-plugin=mysql_native_password
     volumes:
       - pisstaube_mysql_data:/var/lib/mysql
     restart: on-failure
     environment:
       - MYSQL_ROOT_PASSWORD=supersecretpasswordthatnobodywilleverknowsincenobodycanconencttothisdatabasepog
+      - MYSQL_ROOT_HOST=%
     expose:
       - 3306
 
 volumes:
   pisstaube_mysql_data:
-    driver: local
   pisstaube_elastic_search_data:
-    driver: local
