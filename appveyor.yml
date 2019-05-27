@@ -1,0 +1,35 @@
+version: b{build}
+pull_requests:
+  do_not_increment_build_number: true
+
+clone_depth: 10
+image: Visual Studio 2017
+configuration: Release
+
+max_jobs: 5
+
+environment:
+  CODECOV_TOKEN:
+    secure: WvLTLCfMjt4v4RqYBY5L3DUR7CLmrMBhYz4PYbjpFzGIBMCFaTYy5P/ppPqNnhu/
+
+cache:
+  - C:\ProgramData\chocolatey\bin -> appveyor.yml
+  - C:\ProgramData\chocolatey\lib -> appveyor.yml
+
+install:
+  - cmd: git submodule update --init --recursive
+  - cmd: choco install resharper-clt -y
+  - cmd: choco install nvika -y
+  - cmd: choco install nodejs -y
+
+before_build:
+  - cmd: nuget restore -verbosity quiet
+  - cmd: npm install Sora/Jibril/ClientApp
+
+build:
+  parallel: true
+  verbosity: minimal
+
+after_build:
+  - cmd: inspectcode --o="inspectcodereport.xml" --projects:* --caches-home="inspectcode" --severity="WARNING" Pisstaube.sln > NUL
+  - cmd: NVika parsereport "inspectcodereport.xml"
