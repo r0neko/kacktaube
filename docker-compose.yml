@@ -4,7 +4,7 @@ services:
     image: pisstaube
     build: ./
     volumes:
-      - ./data/:/app/data
+      - ./data/:/pisstaube/data
     links:
       - db
       - elasticsearch
@@ -28,6 +28,9 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.1.0
     container_name: elasticsearch
     environment:
+      - discovery.type=single-node
+      - http.host=0.0.0.0
+      - transport.host=127.0.0.1
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
@@ -37,7 +40,7 @@ services:
     volumes:
       - pisstaube_elastic_search_data:/usr/share/elasticsearch/data
     expose:
-      - 3306
+      - 9200
 
   db:
     container_name: db

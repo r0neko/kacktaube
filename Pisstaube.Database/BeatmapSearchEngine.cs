@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Nest;
 using opi.v1;
+using osu.Framework.Logging;
 using Pisstaube.Database.Models;
+using LogLevel = osu.Framework.Logging.LogLevel;
 
 namespace Pisstaube.Database
 {
@@ -27,7 +29,9 @@ namespace Pisstaube.Database
         {
             var map = ElasticBeatmap.GetElasticBeatmap(set);
 
-            _elasticClient.IndexDocument(map);
+            var result = _elasticClient.IndexDocument(map);
+            if (!result.IsValid)
+                Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
         }
 
         public List<BeatmapSet> Search(string query,
@@ -73,6 +77,9 @@ namespace Pisstaube.Database
                         );
                     return ret;
                 });
+                
+                if (!result.IsValid)
+                    Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
 
                 sets.AddRange(result.Hits.Select(hit =>
                 {
