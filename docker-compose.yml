@@ -22,7 +22,7 @@ services:
       - docker.env
     restart: on-failure
     ports:
-      - 62011:5001
+      - 62011:80
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.1.0
