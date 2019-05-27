@@ -8,12 +8,12 @@
         <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
         <PackageReference Include="Microsoft.AspNetCore.HttpsPolicy" Version="2.2.0" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
+        <PackageReference Include="OpenCover" Version="4.7.922" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\osu\osu.Game\osu.Game.csproj" />
       <ProjectReference Include="..\Pisstaube.CacheDb\Pisstaube.CacheDb.csproj" />
-      <ProjectReference Include="..\Pisstaube.Crawler\Pisstaube.Crawler.csproj" />
       <ProjectReference Include="..\Pisstaube.Database\Pisstaube.Database.csproj" />
     </ItemGroup>
 

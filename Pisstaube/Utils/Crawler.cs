@@ -9,7 +9,7 @@ using osu.Framework.Logging;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
 
-namespace Pisstaube.Crawler
+namespace Pisstaube.Utils
 {
     public class Crawler
     {

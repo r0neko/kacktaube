@@ -18,8 +18,8 @@ cache:
 
 install:
   - cmd: git submodule update --init --recursive
-  - cmd: choco install resharper-clt -y
-  - cmd: choco install nvika -y
+  - cmd: choco install opencover.portable -y
+  - cmd: choco install codecov -y
 
 before_build:
   - cmd: nuget restore -verbosity quiet
@@ -28,6 +28,9 @@ build:
   parallel: true
   verbosity: minimal
   project: Pisstaube
-#after_build:
-#  - cmd: inspectcode --o="inspectcodereport.xml" --projects:Pisstaube* --caches-home="inspectcode" --severity="WARNING" Pisstaube.sln > NUL
-#  - cmd: NVika parsereport "inspectcodereport.xml"
+
+test_script:
+  - OpenCover.Console.exe -register:user -target:"C:/Program Files/dotnet/dotnet.exe" -targetargs:"test --logger:trx;LogFileName=results.trx /p:DebugType=full Pisstaube.Tests/Pisstaube.Tests.csproj" -output:"coverage.xml" -filter:"+[Pisstaube*]* -[Pisstaube.Tests*]*" -oldstyle -filter:"+[*]* -[*]*.Migrations.*"
+
+after_test:
+  - codecov -f .\coverage.xml -t $(codecov_token)

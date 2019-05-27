@@ -49,7 +49,7 @@ namespace Pisstaube
                 .AddSingleton<OsuConfigManager>()
                 .AddSingleton<APIAccess>()
                 .AddSingleton<Cleaner>()
-                .AddSingleton<Crawler.Crawler>();
+                .AddSingleton<Crawler>();
             
             services
                 .AddMvc(options =>
@@ -62,7 +62,7 @@ namespace Pisstaube
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, Crawler.Crawler crawler, APIAccess apiv2)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, Crawler crawler, APIAccess apiv2)
         {
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
