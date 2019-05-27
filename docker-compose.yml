@@ -29,7 +29,7 @@ services:
     container_name: elasticsearch
     environment:
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx2G"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
       memlock:
         soft: -1
@@ -38,10 +38,6 @@ services:
       - pisstaube_elastic_search_data:/usr/share/elasticsearch/data
     expose:
       - 3306
-    deploy:
-      resources:
-        limits:
-          memory: 2G
 
   db:
     container_name: db
