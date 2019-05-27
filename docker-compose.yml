@@ -38,7 +38,10 @@ services:
       - pisstaube_elastic_search_data:/usr/share/elasticsearch/data
     expose:
       - 3306
-    mem_limit: 2g
+    deploy:
+      resources:
+        limits:
+          memory: 2G
 
   db:
     container_name: db
