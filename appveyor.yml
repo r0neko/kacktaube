@@ -20,15 +20,14 @@ install:
   - cmd: git submodule update --init --recursive
   - cmd: choco install resharper-clt -y
   - cmd: choco install nvika -y
-  - cmd: choco install nodejs -y
 
 before_build:
   - cmd: nuget restore -verbosity quiet
-  - cmd: npm install Sora/Jibril/ClientApp
 
 build:
   parallel: true
   verbosity: minimal
+  project: Pisstaube
 
 after_build:
   - cmd: inspectcode --o="inspectcodereport.xml" --projects:* --caches-home="inspectcode" --severity="WARNING" Pisstaube.sln > NUL
