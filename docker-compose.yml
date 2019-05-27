@@ -16,7 +16,7 @@ services:
       - MARIADB_PORT=3306
       - MARIADB_USERNAME=root
       - MARIADB_PASSWORD=supersecretpasswordthatnobodywilleverknowsincenobodycanconencttothisdatabasepog
-      - ELASTIC_HOSTNAME=elastic
+      - ELASTIC_HOSTNAME=elasticsearch
       - ELASTIC_PORT=9200
     env_file:
       - docker.env
