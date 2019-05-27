@@ -28,9 +28,6 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.1.0
     container_name: elasticsearch
     environment:
-      - node.name=elasticsearch
-      - cluster.initial_master_nodes=elasticsearch
-      - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx2G"
     ulimits:
@@ -41,6 +38,7 @@ services:
       - pisstaube_elastic_search_data:/usr/share/elasticsearch/data
     expose:
       - 3306
+    mem_limit: 2g
 
   db:
     container_name: db
