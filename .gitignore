@@ -2,9 +2,9 @@ data/
 *.db
 *.ini
 .env
-
+coverage.xml
 .idea/
-
+docker.env
 
 # Created by https://www.gitignore.io/api/rider,windows,visualstudio,visualstudiocode
 # Edit at https://www.gitignore.io/?templates=rider,windows,visualstudio,visualstudiocode

@@ -1,0 +1,59 @@
+version: "3.5"
+services:
+  pisstaube:
+    image: pisstaube
+    build: ./
+    volumes:
+      - ./data/:/app/data
+    links:
+      - db
+      - elasticsearch
+    depends_on:
+      - db
+      - elasticsearch
+    environment:
+      - MARIADB_HOST=db
+      - MARIADB_PORT=3306
+      - MARIADB_USERNAME=root
+      - MARIADB_PASSWORD=supersecretpasswordthatnobodywilleverknowsincenobodycanconencttothisdatabasepog
+      - ELASTIC_HOSTNAME=elastic
+      - ELASTIC_PORT=9200
+    env_file:
+      - docker.env
+    restart: on-failure
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.1.0
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.initial_master_nodes=elasticsearch
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx2G"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - pisstaube_elastic_search_data:/usr/share/elasticsearch/data
+    expose:
+      - 3306
+
+  db:
+    container_name: db
+    image: mariadb:10.4
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - pisstaube_mysql_data:/var/lib/mysql
+    restart: on-failure
+    environment:
+      - MYSQL_ROOT_PASSWORD=supersecretpasswordthatnobodywilleverknowsincenobodycanconencttothisdatabasepog
+    expose:
+      - 3306
+
+volumes:
+  pisstaube_mysql_data:
+    driver: local
+  pisstaube_elastic_search_data:
+    driver: local

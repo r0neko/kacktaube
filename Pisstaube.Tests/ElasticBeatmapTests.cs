@@ -52,6 +52,8 @@ namespace Pisstaube.Tests
                     }
                 }
             };
+            sampleSet.ChildrenBeatmaps[0].Parent = sampleSet;
+            
             var returnResult = ElasticBeatmap.GetElasticBeatmap(sampleSet);
             var expectedResult = new ElasticBeatmap
             {
