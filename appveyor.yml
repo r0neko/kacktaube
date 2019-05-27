@@ -28,7 +28,6 @@ build:
   parallel: true
   verbosity: minimal
   project: Pisstaube
-
-after_build:
-  - cmd: inspectcode --o="inspectcodereport.xml" --projects:Pisstaube.* --caches-home="inspectcode" --severity="WARNING" Pisstaube.sln > NUL
-  - cmd: NVika parsereport "inspectcodereport.xml"
+#after_build:
+#  - cmd: inspectcode --o="inspectcodereport.xml" --projects:Pisstaube* --caches-home="inspectcode" --severity="WARNING" Pisstaube.sln > NUL
+#  - cmd: NVika parsereport "inspectcodereport.xml"
