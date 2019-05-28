@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
@@ -59,6 +60,12 @@ namespace Pisstaube
                     options.OutputFormatters.RemoveType<HttpNoContentOutputFormatter>();
                 })
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+
+            services.Configure<FormOptions>(x =>
+            {
+                x.ValueLengthLimit = int.MaxValue;
+                x.MultipartBodyLengthLimit = int.MaxValue;
+            });
             
             services.AddRouting();
         }
@@ -90,7 +97,6 @@ namespace Pisstaube
             
             DogStatsd.ServiceCheck("is_active", Status.OK);
 
-            app.UseHttpsRedirection();
             app.UseMvc(routes =>
             {
                 routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}");

@@ -13,6 +13,7 @@ namespace Pisstaube.Database
     {
         private readonly PisstaubeDbContext _db;
         private readonly ElasticClient _elasticClient;
+        private static object _lock = new object();
         
         public BeatmapSearchEngine(PisstaubeDbContext db)
         {
@@ -26,11 +27,24 @@ namespace Pisstaube.Database
 
         public void IndexBeatmap(BeatmapSet set)
         {
-            var map = ElasticBeatmap.GetElasticBeatmap(set);
+            lock (_lock)
+            {
+                _elasticClient.DeleteByQuery<ElasticBeatmap>(x =>
+                    x.Query(query => query.Exists(exists => exists.Field(field => field.SetId == set.SetId))));
+                var map = ElasticBeatmap.GetElasticBeatmap(set);
 
-            var result = _elasticClient.IndexDocument(map);
-            if (!result.IsValid)
-                Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
+                var result = _elasticClient.IndexDocument(map);
+                if (!result.IsValid)
+                    Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
+            }
+        }
+
+        public void DeleteAllBeatmaps()
+        {
+            lock (_lock)
+            {
+                _elasticClient.DeleteByQuery<ElasticBeatmap>(x => x);
+            }
         }
 
         public List<BeatmapSet> Search(string query,
