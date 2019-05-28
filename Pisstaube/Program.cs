@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using opi.v1;
 using osu.Framework.Platform;
 using Pisstaube.Database;
+using Sentry;
 
 namespace Pisstaube
 {
@@ -25,6 +26,7 @@ namespace Pisstaube
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .UseSentry(Environment.GetEnvironmentVariable("SENTRY_DNS"))
                 .UseStartup<Startup>();
     }
 }

@@ -6,14 +6,17 @@ services:
     volumes:
       - ./data/:/pisstaube/data
     links:
+      - datadog
       - db
       - elasticsearch
     depends_on:
+      - datadog
       - db
       - elasticsearch
     environment:
       - MARIADB_HOST=db
       - MARIADB_PORT=3306
+      - DD_AGENT_HOST=datadog
       - MARIADB_USERNAME=root
       - MARIADB_PASSWORD=supersecretpasswordthatnobodywilleverknowsincenobodycanconencttothisdatabasepog
       - ELASTIC_HOSTNAME=elasticsearch
@@ -56,6 +59,16 @@ services:
       - MYSQL_ROOT_HOST=%
     expose:
       - 3306
+
+  datadog:
+    container_name: datadog
+    image: docker-dd-agent:latest
+    env_file:
+      - docker.env
+    restart: on-failure
+    expose:
+      - 8125
+      - 8126
 
 volumes:
   pisstaube_mysql_data:

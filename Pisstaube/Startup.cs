@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,6 +22,7 @@ using osu.Game.Online.API;
 using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Utils;
+using StatsdClient;
 
 namespace Pisstaube
 {
@@ -70,9 +72,23 @@ namespace Pisstaube
                 app.UseHsts();
 
             apiv2.Login(Environment.GetEnvironmentVariable("OSU_EMAIL"), Environment.GetEnvironmentVariable("OSU_PASSWORD"));
-
+            
+            DogStatsd.Configure(new StatsdConfig { Prefix = "pisstaube" });
+            
+            DogStatsd.ServiceCheck("crawler.is_crawling", Status.UNKNOWN);
+            
             if (Environment.GetEnvironmentVariable("CRAWLER_DISABLED") != "true")
                 crawler.BeginCrawling();
+            else
+                DogStatsd.ServiceCheck("crawler.is_crawling", Status.CRITICAL);
+
+            if (!Directory.Exists("data"))
+                Directory.CreateDirectory("data");
+            
+            if (!Directory.Exists("data/cache"))
+                Directory.CreateDirectory("data/cache");
+            
+            DogStatsd.ServiceCheck("is_active", Status.OK);
 
             app.UseHttpsRedirection();
             app.UseMvc(routes =>

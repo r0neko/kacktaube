@@ -12,6 +12,7 @@ using Pisstaube.CacheDb.Models;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
 using Pisstaube.Utils;
+using StatsdClient;
 
 namespace Pisstaube.Controllers
 {
@@ -102,6 +103,8 @@ namespace Pisstaube.Controllers
                 }
 
                 _cacheContext.SaveChanges();
+
+                DogStatsd.Increment("beatmap.downloads");
                 
                 return File(cacheStorage.GetStream(beatmapSetId.ToString("x8")),
                     "application/octet-stream",
@@ -124,6 +127,8 @@ namespace Pisstaube.Controllers
                 _cacheContext.CacheBeatmapSet.Update(cachedMap);
             }
             _cacheContext.SaveChanges();
+            
+            DogStatsd.Increment("beatmap.downloads");
 
             return File(cacheStorage.GetStream(beatmapSetId.ToString("x8")),
                 "application/octet-stream",

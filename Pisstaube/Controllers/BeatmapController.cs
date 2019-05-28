@@ -7,6 +7,7 @@ using osu.Game.Online.API;
 using osu.Game.Online.API.Requests;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
+using StatsdClient;
 
 namespace Pisstaube.Controllers
 {
@@ -29,15 +30,20 @@ namespace Pisstaube.Controllers
         
         // GET /api/b/:BeatmapId
         [HttpGet("b/{beatmapId:int}")]
-        public ActionResult<ChildrenBeatmap> GetBeatmap(int beatmapId) =>
-            _context.Beatmaps.FirstOrDefault(cb => cb.BeatmapId == beatmapId);
+        public ActionResult<ChildrenBeatmap> GetBeatmap(int beatmapId)
+        {
+            DogStatsd.Increment("beatmap.request");
+            return _context.Beatmaps.FirstOrDefault(cb => cb.BeatmapId == beatmapId);
+        }
 
         // GET /api/b/:BeatmapSetId
         [HttpGet("s/{beatmapSetId:int}")]
         public ActionResult<BeatmapSet> GetSet(int beatmapSetId)
         {
             var set = _context.BeatmapSet.FirstOrDefault(s => s.SetId == beatmapSetId);
-            Console.WriteLine(beatmapSetId);
+            
+            DogStatsd.Increment("beatmap.set.request");
+            
             if (set == null)
                 return null;
             

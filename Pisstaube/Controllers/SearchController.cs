@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using opi.v1;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
+using StatsdClient;
 
 namespace Pisstaube.Controllers
 {
@@ -29,7 +30,9 @@ namespace Pisstaube.Controllers
             )
         {
             var result = _searchEngine.Search(query, amount, offset, status, mode);
-
+            
+            DogStatsd.Increment("beatmap.searches");
+            
             if (result.Count == 0) result = null; // Cheesegull logic ^^,
             
             return result;

@@ -8,6 +8,7 @@ using opi.v1;
 using osu.Framework.Logging;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
+using StatsdClient;
 
 namespace Pisstaube.Utils
 {
@@ -35,6 +36,15 @@ namespace Pisstaube.Utils
 
         public void BeginCrawling()
         {
+            new Thread(() =>
+            {
+                while (true)
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(30));
+                    lock(_lock) DogStatsd.Set("crawler.latest_id", _latest_Id);
+                }
+            }).Start();
+            
             while (true)
             {
                 if (_thread_restarter == null)
@@ -44,6 +54,7 @@ namespace Pisstaube.Utils
 
                         while (true)
                         {
+                            DogStatsd.ServiceCheck("crawler.is_crawling", Status.OK);
                             for (var i = 0; i < _workerThreads; i++)
                             {
                                 _pool.Add(new Thread(_crawl));
@@ -52,7 +63,8 @@ namespace Pisstaube.Utils
                             }
 
                             while (!_should_stop) Thread.Sleep(50);
-
+                            
+                            DogStatsd.ServiceCheck("crawler.is_crawling", Status.CRITICAL);
                             Logger.LogPrint("Crawler finished! Gonna retry again in 1d", LoggingTarget.Information);
                             Thread.Sleep(TimeSpan.FromDays(1));
                         }

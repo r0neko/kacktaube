@@ -5,6 +5,7 @@ using System.Linq;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
 using Pisstaube.CacheDb;
+using StatsdClient;
 
 namespace Pisstaube.Utils
 {
@@ -92,6 +93,8 @@ namespace Pisstaube.Utils
             
             var info = new DirectoryInfo(_cacheStorage.GetFullPath("./")); 
             _dataDirectorySize = info.EnumerateFiles().Sum(file => file.Length);
+            
+            DogStatsd.Set("cleaner.storage_usage", (ulong) _dataDirectorySize / _maxSize);
         }
 
         private bool IsFitting(long size) => (ulong) (size + _dataDirectorySize) <= _maxSize;
@@ -103,6 +106,7 @@ namespace Pisstaube.Utils
             for (var i = 0; i < 1000; i++)
             {
                 Logger.LogPrint($"FreeStorage (DirectorySize: {_dataDirectorySize} MaxSize: {_maxSize})");
+                DogStatsd.Set("cleaner.storage_usage", (ulong) _dataDirectorySize / _maxSize);
                 if (IsFitting(0)) return true;
                 
                 Logger.LogPrint("Freeing Storage");
