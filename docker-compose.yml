@@ -62,7 +62,7 @@ services:
 
   datadog:
     container_name: datadog
-    image: docker-dd-agent:latest
+    image: datadog/docker-dd-agent:latest
     env_file:
       - docker.env
     restart: on-failure
