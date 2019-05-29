@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
 using opi.v1;
+using osu.Game.Beatmaps;
 
 namespace Pisstaube.Database.Models
 {
@@ -58,5 +59,33 @@ namespace Pisstaube.Database.Models
 
         [JsonProperty("DifficultyRating")]
         public double DifficultyRating { get; set; }
+
+        public static ChildrenBeatmap FromBeatmapInfo(BeatmapInfo info, BeatmapSet parent = null)
+        {
+            if (info == null)
+                return null;
+
+            var cb = new ChildrenBeatmap();
+
+            cb.BeatmapId = info.OnlineBeatmapID ?? -1;
+            cb.ParentSetId = info.BeatmapSetInfoID;
+            cb.Parent = parent;
+            cb.DiffName = info.Version;
+            cb.FileMd5 = info.MD5Hash;
+            cb.Mode = (PlayMode) info.RulesetID;
+            cb.Bpm = info.BeatDivisor; // TODO: check
+            cb.Ar = info.BaseDifficulty.ApproachRate;
+            cb.Od = info.BaseDifficulty.OverallDifficulty;
+            cb.Cs = info.BaseDifficulty.CircleSize;
+            cb.Hp = info.BaseDifficulty.DrainRate;
+            cb.TotalLength = (int) info.OnlineInfo.Length;
+            cb.HitLength = (int) info.StackLeniency; // TODO: check
+            cb.Playcount = info.OnlineInfo.PassCount;
+            cb.Playcount = info.OnlineInfo.PlayCount;
+            cb.MaxCombo = 0; // TODO: Fix
+            cb.DifficultyRating = info.StarDifficulty;
+
+            return cb;
+        }
     }
 }

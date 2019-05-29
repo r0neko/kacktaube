@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using opi.v1;
+using osu.Game.Beatmaps;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
 using StatsdClient;
@@ -25,7 +26,7 @@ namespace Pisstaube.Controllers
             [FromQuery] string query = "",
             [FromQuery] int amount = 100,
             [FromQuery] int offset = 0,
-            [FromQuery] RankedStatus? status = null,
+            [FromQuery] BeatmapSetOnlineStatus? status = null,
             [FromQuery] PlayMode mode = PlayMode.All
             )
         {

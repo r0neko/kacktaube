@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using opi.v1;
+using osu.Game.Beatmaps;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
 
@@ -16,7 +17,7 @@ namespace Pisstaube.Tests
             var sampleSet = new BeatmapSet
             {
                 SetId = 1,
-                RankedStatus = RankedStatus.Ranked,
+                RankedStatus = BeatmapSetOnlineStatus.Ranked,
                 ApprovedDate = DateTime.Parse("2007-10-06T17:46:31"),
                 LastUpdate = DateTime.Parse("2007-10-06T17:46:31"),
                 LastChecked = DateTime.Parse("2019-05-27T07:08:25.900422"),

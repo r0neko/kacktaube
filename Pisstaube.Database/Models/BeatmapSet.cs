@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using Newtonsoft.Json;
 using opi.v1;
 using osu.Game.Beatmaps;
@@ -19,7 +20,7 @@ namespace Pisstaube.Database.Models
         public List<ChildrenBeatmap> ChildrenBeatmaps { get; set; }
 
         [JsonProperty("RankedStatus")]
-        public RankedStatus RankedStatus { get; set; }
+        public BeatmapSetOnlineStatus RankedStatus { get; set; }
 
         [JsonProperty("ApprovedDate")]
         public DateTime? ApprovedDate { get; set; }
@@ -56,5 +57,35 @@ namespace Pisstaube.Database.Models
 
         [JsonProperty("Favourites")]
         public long Favourites { get; set; }
+
+        public static BeatmapSet FromBeatmapSetInfo(BeatmapSetInfo info)
+        {
+            if (info?.Beatmaps == null)
+                return null;
+
+            var beatmapSet = new BeatmapSet
+            {
+                SetId = info.OnlineBeatmapSetID ?? -1,
+                RankedStatus = info.Status,
+                ApprovedDate = info.OnlineInfo.Ranked?.DateTime,
+                LastUpdate = info.OnlineInfo.LastUpdated?.DateTime,
+                LastChecked = DateTime.Now,
+                Artist = info.Metadata.Artist,
+                Title = info.Metadata.Title,
+                Creator = info.Metadata.Author.Username,
+                Source = info.Metadata.Source,
+                Tags = info.Metadata.Tags,
+                HasVideo = info.OnlineInfo.HasVideo,
+                ChildrenBeatmaps = new List<ChildrenBeatmap>(),
+                // Obsolete!
+                Genre = Genre.Any,
+                Language = Language.Any
+            };
+
+            foreach (var map in info.Beatmaps)
+                beatmapSet.ChildrenBeatmaps.Add(ChildrenBeatmap.FromBeatmapInfo(map, beatmapSet));
+
+            return beatmapSet;
+        }
     }
 }

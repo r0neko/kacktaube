@@ -19,7 +19,9 @@ using osu.Framework.Logging;
 using osu.Framework.Platform;
 using osu.Framework.Threading;
 using osu.Game.Configuration;
+using osu.Game.Database;
 using osu.Game.Online.API;
+using osu.Game.Rulesets;
 using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Utils;
@@ -32,9 +34,29 @@ namespace Pisstaube
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+            dataStorage = new NativeStorage("data");
+            contextFactory = new DatabaseContextFactory(dataStorage);
+            
+            // copy paste of OsuGameBase.cs
+            try
+            {
+                using (var db = contextFactory.GetForWrite(false))
+                    db.Context.Migrate();
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e.InnerException ?? e, "Migration failed! We'll be starting with a fresh database.", LoggingTarget.Database);
+                contextFactory.ResetDatabase();
+                Logger.Log("Database purged successfully.", LoggingTarget.Database);
+                using (var db = contextFactory.GetForWrite(false))
+                    db.Context.Migrate();
+            }
         }
 
         public IConfiguration Configuration { get; }
+        
+        private readonly DatabaseContextFactory contextFactory;
+        private readonly NativeStorage dataStorage;
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -47,11 +69,12 @@ namespace Pisstaube
             services
                 .AddSingleton<PisstaubeDbContext>()
                 .AddSingleton<BeatmapSearchEngine>()
-                .AddSingleton<Storage>(new NativeStorage("data"))
+                .AddSingleton<Storage>(dataStorage)
                 .AddSingleton<PisstaubeCacheDbContext>()
                 .AddSingleton<OsuConfigManager>()
                 .AddSingleton<APIAccess>()
                 .AddSingleton<Cleaner>()
+                .AddSingleton(new RulesetStore(contextFactory))
                 .AddSingleton<Crawler>();
             
             services
@@ -71,7 +94,8 @@ namespace Pisstaube
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, Crawler crawler, APIAccess apiv2)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env,
+            Crawler crawler, APIAccess apiv2)
         {
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();

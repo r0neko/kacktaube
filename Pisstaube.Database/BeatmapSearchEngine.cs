@@ -4,6 +4,7 @@ using System.Linq;
 using Nest;
 using opi.v1;
 using osu.Framework.Logging;
+using osu.Game.Beatmaps;
 using Pisstaube.Database.Models;
 using LogLevel = osu.Framework.Logging.LogLevel;
 
@@ -50,7 +51,7 @@ namespace Pisstaube.Database
         public List<BeatmapSet> Search(string query,
             int amount = 100,
             int offset = 0,
-            RankedStatus? rankedStatus = null,
+            BeatmapSetOnlineStatus? rankedStatus = null,
             PlayMode mode = PlayMode.All)
         {
             if (amount > 100 || amount <= -1)

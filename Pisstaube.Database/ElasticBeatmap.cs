@@ -5,6 +5,7 @@ using Elasticsearch.Net;
 using Microsoft.EntityFrameworkCore.Internal;
 using Newtonsoft.Json;
 using opi.v1;
+using osu.Game.Beatmaps;
 using Pisstaube.Database.Models;
 
 namespace Pisstaube.Database
@@ -12,7 +13,7 @@ namespace Pisstaube.Database
     public class ElasticBeatmap
     {
         public int SetId;
-        public RankedStatus RankedStatus;
+        public BeatmapSetOnlineStatus RankedStatus;
 
         public string Artist;
         public string Title;
