@@ -73,7 +73,6 @@ namespace Pisstaube.Database.Models
             cb.DiffName = info.Version;
             cb.FileMd5 = info.MD5Hash;
             cb.Mode = (PlayMode) info.RulesetID;
-            cb.Bpm = info.BeatDivisor; // TODO: check
             cb.Ar = info.BaseDifficulty.ApproachRate;
             cb.Od = info.BaseDifficulty.OverallDifficulty;
             cb.Cs = info.BaseDifficulty.CircleSize;
