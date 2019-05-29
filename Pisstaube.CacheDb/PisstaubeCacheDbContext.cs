@@ -6,33 +6,22 @@ namespace Pisstaube.CacheDb
 {
     public class PisstaubeCacheDbContext : DbContext
     {
-        private readonly Storage _storage;
+        private readonly string _conString;
         public DbSet<CacheBeatmapSet> CacheBeatmapSet { get; set; }
+        public DbSet<Beatmap> CacheBeatmaps { get; set; }
         
-        private static readonly bool[] Migrated = {false};
-        public PisstaubeCacheDbContext(Storage storage = null)
+        public PisstaubeCacheDbContext(string conString = null)
         {
-            _storage = storage ?? new NativeStorage("data");
-            
-            if (Migrated[0]) return;
-            lock (Migrated)
-            {
-                if (Migrated[0]) return;
-                Database.Migrate();
-                Migrated[0] = true;
-            }
+            _conString = conString;
         }
         
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
             
-            optionsBuilder.UseSqlite(_storage.GetDatabaseConnectionString("cache"));
+            optionsBuilder.UseSqlite(_conString);
         }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-        }
+        
+        public void Migrate() => Database.Migrate();
     }
 }

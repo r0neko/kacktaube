@@ -1,29 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using osu.Framework.Graphics;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
-using osu.Framework.Threading;
 using osu.Game.Configuration;
 using osu.Game.Database;
+using osu.Game.IO;
 using osu.Game.Online.API;
 using osu.Game.Rulesets;
 using Pisstaube.CacheDb;
 using Pisstaube.Database;
+using Pisstaube.Online;
 using Pisstaube.Utils;
 using StatsdClient;
 
@@ -31,31 +24,46 @@ namespace Pisstaube
 {
     public class Startup
     {
+        // ReSharper disable once UnusedParameter.Local
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
             dataStorage = new NativeStorage("data");
-            contextFactory = new DatabaseContextFactory(dataStorage);
+            osuContextFactory = new DatabaseContextFactory(dataStorage);
+            cacheContextFactory = new PisstaubeCacheDbContextFactory(dataStorage);
             
             // copy paste of OsuGameBase.cs
             try
             {
-                using (var db = contextFactory.GetForWrite(false))
+                using (var db = osuContextFactory.GetForWrite(false))
                     db.Context.Migrate();
             }
             catch (Exception e)
             {
                 Logger.Error(e.InnerException ?? e, "Migration failed! We'll be starting with a fresh database.", LoggingTarget.Database);
-                contextFactory.ResetDatabase();
+                osuContextFactory.ResetDatabase();
                 Logger.Log("Database purged successfully.", LoggingTarget.Database);
-                using (var db = contextFactory.GetForWrite(false))
+                using (var db = osuContextFactory.GetForWrite(false))
+                    db.Context.Migrate();
+            }
+            
+            // copy paste of OsuGameBase.cs
+            try
+            {
+                using (var db = cacheContextFactory.GetForWrite(false))
+                    db.Context.Migrate();
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e.InnerException ?? e, "Migration failed! We'll be starting with a fresh database.", LoggingTarget.Database);
+                cacheContextFactory.ResetDatabase();
+                Logger.Log("Database purged successfully.", LoggingTarget.Database);
+                using (var db = cacheContextFactory.GetForWrite(false))
                     db.Context.Migrate();
             }
         }
 
-        public IConfiguration Configuration { get; }
-        
-        private readonly DatabaseContextFactory contextFactory;
+        private readonly DatabaseContextFactory osuContextFactory;
+        private readonly PisstaubeCacheDbContextFactory cacheContextFactory;
         private readonly NativeStorage dataStorage;
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -70,11 +78,13 @@ namespace Pisstaube
                 .AddSingleton<PisstaubeDbContext>()
                 .AddSingleton<BeatmapSearchEngine>()
                 .AddSingleton<Storage>(dataStorage)
-                .AddSingleton<PisstaubeCacheDbContext>()
+                .AddSingleton(cacheContextFactory)
                 .AddSingleton<OsuConfigManager>()
                 .AddSingleton<APIAccess>()
                 .AddSingleton<Cleaner>()
-                .AddSingleton(new RulesetStore(contextFactory))
+                .AddSingleton(new FileStore(osuContextFactory, dataStorage))
+                .AddSingleton(new RulesetStore(osuContextFactory))
+                .AddSingleton<BeatmapDownloader>()
                 .AddSingleton<Crawler>();
             
             services

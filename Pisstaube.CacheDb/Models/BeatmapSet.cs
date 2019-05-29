@@ -9,6 +9,8 @@ namespace Pisstaube.CacheDb.Models
         [Required]
         public int SetId { get; set; }
         
+        public string Hash { get; set; }
+        
         public long DownloadCount { get; set; }
         
         public DateTime LastDownload { get; set; }

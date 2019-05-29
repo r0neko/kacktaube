@@ -11,14 +11,14 @@ namespace Pisstaube.Utils
 {
     public class Cleaner
     {
-        private readonly PisstaubeCacheDbContext _context;
+        private readonly PisstaubeCacheDbContextFactory _cache;
         private readonly ulong _maxSize;
         private long _dataDirectorySize;
         private readonly Storage _cacheStorage;
         
-        public Cleaner(Storage storage, PisstaubeCacheDbContext context)
+        public Cleaner(Storage storage, PisstaubeCacheDbContextFactory cache)
         {
-            _context = context;
+            _cache = cache;
             var maxSize = Environment.GetEnvironmentVariable("CLEANER_MAX_SIZE");
             Debug.Assert(maxSize != null, nameof(maxSize) + " != null");
             
@@ -110,39 +110,42 @@ namespace Pisstaube.Utils
                 if (IsFitting(0)) return true;
                 
                 Logger.LogPrint("Freeing Storage");
-                
-                var map = _context.CacheBeatmapSet.FirstOrDefault(cbs => (cbs.LastDownload - DateTime.Now).TotalDays < 7);
-                if (map != null)
+
+                using (var db = _cache.GetForWrite())
                 {
-                    _context.CacheBeatmapSet.Remove(map);
-                    _context.SaveChanges();
-                    if (!_cacheStorage.Exists(map.SetId.ToString("x8")))
-                        continue;
+                    var map = db.Context.CacheBeatmapSet.FirstOrDefault(cbs => (cbs.LastDownload - DateTime.Now).TotalDays < 7);
+                    if (map != null)
+                    {
+                        db.Context.CacheBeatmapSet.Remove(map);
+                        db.Context.SaveChanges();
+                        if (!_cacheStorage.Exists(map.SetId.ToString("x8")))
+                            continue;
                     
-                    _dataDirectorySize -= new FileInfo(_cacheStorage.GetFullPath(map.SetId.ToString("x8"))).Length;
-                    if (_dataDirectorySize < 0)
-                        _dataDirectorySize = 0;
+                        _dataDirectorySize -= new FileInfo(_cacheStorage.GetFullPath(map.SetId.ToString("x8"))).Length;
+                        if (_dataDirectorySize < 0)
+                            _dataDirectorySize = 0;
                     
-                    _cacheStorage.Delete(map.SetId.ToString("x8"));
-                    _context.SaveChanges();
-                }
-                else
-                {
-                    map = _context.CacheBeatmapSet.OrderByDescending(cbs => cbs.LastDownload)
-                        .ThenByDescending(cbs => cbs.DownloadCount).FirstOrDefault();
+                        _cacheStorage.Delete(map.SetId.ToString("x8"));
+                        db.Context.SaveChanges();
+                    }
+                    else
+                    {
+                        map = db.Context.CacheBeatmapSet.OrderByDescending(cbs => cbs.LastDownload)
+                            .ThenByDescending(cbs => cbs.DownloadCount).FirstOrDefault();
                     
-                    if (map == null) continue;
-                    _context.CacheBeatmapSet.Remove(map);
-                    _context.SaveChanges();
-                    if (!_cacheStorage.Exists(map.SetId.ToString("x8")))
-                        continue;
+                        if (map == null) continue;
+                        db.Context.CacheBeatmapSet.Remove(map);
+                        db.Context.SaveChanges();
+                        if (!_cacheStorage.Exists(map.SetId.ToString("x8")))
+                            continue;
                     
-                    _dataDirectorySize -= new FileInfo(_cacheStorage.GetFullPath(map.SetId.ToString("x8"))).Length;
-                    if (_dataDirectorySize < 0)
-                        _dataDirectorySize = 0;
+                        _dataDirectorySize -= new FileInfo(_cacheStorage.GetFullPath(map.SetId.ToString("x8"))).Length;
+                        if (_dataDirectorySize < 0)
+                            _dataDirectorySize = 0;
                     
-                    _cacheStorage.Delete(map.SetId.ToString("x8"));
-                    _context.SaveChanges();
+                        _cacheStorage.Delete(map.SetId.ToString("x8"));
+                        db.Context.SaveChanges();
+                    }
                 }
             }
 
