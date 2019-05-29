@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using opi.v1;
 using osu.Framework.Logging;
 using osu.Game.Online.API;
 using osu.Game.Online.API.Requests;
 using osu.Game.Rulesets;
+using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
+using Pisstaube.Online;
 using StatsdClient;
 
 namespace Pisstaube.Utils
@@ -27,16 +28,24 @@ namespace Pisstaube.Utils
         private readonly BeatmapSearchEngine _search;
         private readonly APIAccess _apiAccess;
         private readonly RulesetStore _store;
+        private readonly BeatmapDownloader _downloader;
+        private readonly PisstaubeCacheDbContextFactory _cache;
         private readonly int _workerThreads;
         private Thread _thread_restarter;
         private Thread _dd_thread;
 
-        public Crawler(BeatmapSearchEngine search, APIAccess apiAccess, RulesetStore store)
+        public Crawler(BeatmapSearchEngine search,
+            APIAccess apiAccess,
+            RulesetStore store,
+            BeatmapDownloader downloader,
+            PisstaubeCacheDbContextFactory cache)
         {
             _pool = new List<Thread>();
             _search = search;
             _apiAccess = apiAccess;
             _store = store;
+            _downloader = downloader;
+            _cache = cache;
             _workerThreads = int.Parse(Environment.GetEnvironmentVariable("CRAWLER_THREADS"));
         }
 
@@ -91,7 +100,6 @@ namespace Pisstaube.Utils
                     });
                 else
                 {
-                    _thread_restarter.Abort();
                     _thread_restarter = null;
                     continue;
                 }
@@ -108,11 +116,17 @@ namespace Pisstaube.Utils
             Logger.LogPrint("Stop Crawling");
             _force_stop = true;
             _should_stop = true;
+            Wait();
+            
+            _pool = new List<Thread>();
+            
+            _latest_Id = 0;
         }
 
         public void Wait()
         {
-            _pool.Last().Join();
+            foreach (var thread in _pool)
+                thread.Join();
         }
 
         private void _crawl()
@@ -128,7 +142,10 @@ namespace Pisstaube.Utils
                     lock (_lock)
                         id = _latest_Id++;
 
-                    Crawl(id, _context);
+                    if (!Crawl(id, _context))
+                        _fail_count++;
+                    else
+                        _fail_count = 0;
 
                     if (_fail_count > 50) // We failed 50 times, lets try tomorrow again! maybe there are new exciting beatmaps!
                         _should_stop = true;
@@ -144,7 +161,7 @@ namespace Pisstaube.Utils
                     Thread.Sleep(1000);
 
                 var setRequest = new GetBeatmapSetRequest(id);
-                
+
                 lock (_lock)
                     _request_count++;
 
@@ -155,13 +172,8 @@ namespace Pisstaube.Utils
                         Thread.Sleep(TimeSpan.FromMinutes(1));
 
                 var apiSet = setRequest.Result;
-                if (apiSet == null)
-                {
-                    _fail_count++;
-                    return false;
-                }
-                
-                var localSet = apiSet.ToBeatmapSet(_store);
+
+                var localSet = apiSet?.ToBeatmapSet(_store);
                 if (localSet == null)
                     return false;
 
@@ -175,15 +187,23 @@ namespace Pisstaube.Utils
                     _context.SaveChanges();
                 }
 
+                foreach (var map in dbSet.ChildrenBeatmaps)
+                {
+                    var fileInfo = _downloader.Download(map);
+                    
+                    map.FileMd5 = _cache.Get()
+                        .CacheBeatmaps
+                        .Where(cmap => cmap.Hash == fileInfo.Hash)
+                        .Select(cmap => cmap.FileMd5)
+                        .FirstOrDefault();
+                }
+
                 _search.IndexBeatmap(dbSet);
-                _fail_count = 0;
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, $"Unknown Error occured while crawling Id {id}!");
                 
-                _fail_count++;
-
                 lock (_lock)
                     Thread.Sleep(TimeSpan.FromMinutes(1));
                 return false;

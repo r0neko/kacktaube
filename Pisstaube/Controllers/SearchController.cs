@@ -38,6 +38,5 @@ namespace Pisstaube.Controllers
             
             return result;
         }
-
     }
 }

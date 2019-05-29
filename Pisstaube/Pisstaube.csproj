@@ -24,4 +24,8 @@
       <ProjectReference Include="..\Pisstaube.Database\Pisstaube.Database.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="data\tmp" />
+    </ItemGroup>
+
 </Project>

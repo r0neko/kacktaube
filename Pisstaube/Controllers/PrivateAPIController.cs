@@ -4,6 +4,7 @@ using System.Threading;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using osu.Framework.Logging;
+using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Utils;
 
@@ -20,11 +21,10 @@ namespace Pisstaube.Controllers
     [ApiController]
     public class PrivateAPIController : ControllerBase
     {
-        // GET /api/pisstaube/dump?key={PRIVATE_API_KEY}
+        // GET /api/pisstaube/dump
         [HttpGet("dump")]
-        public ActionResult DumpDatabase([FromServices] PisstaubeDbContext db, [FromQuery] string key)
+        public ActionResult DumpDatabase([FromServices] PisstaubeDbContext db)
         {
-            // TODO: Finish
             return NotFound();
         }
 
@@ -33,6 +33,7 @@ namespace Pisstaube.Controllers
             [FromServices] PisstaubeDbContext db,
             [FromServices] BeatmapSearchEngine searchEngine,
             [FromServices] Crawler crawler,
+            [FromServices] PisstaubeCacheDbContextFactory _cache,
             [FromQuery] string key,
             [FromQuery] RecoveryAction action
             )
@@ -73,6 +74,13 @@ namespace Pisstaube.Controllers
                                                       "TRUNCATE TABLE `BeatmapSet`;" +
                                                       "ALTER TABLE `BeatmapSet` AUTO_INCREMENT = 1;" +
                                                       "SET FOREIGN_KEY_CHECKS = 1;");
+
+                        using (var cacheDb = _cache.GetForWrite())
+                        {
+                            cacheDb.Context.Database.ExecuteSqlCommand(
+                                "DELETE FROM `CacheBeatmaps`;" +
+                                "DELETE FROM `CacheBeatmapSet`;");
+                        }
                         crawler.BeginCrawling();
                     }).Start();
                     break;

@@ -42,6 +42,7 @@ namespace Pisstaube.Database
 
         public void DeleteAllBeatmaps()
         {
+            Logger.LogPrint("Deleting all Beatmaps from ElasticSearch!");
             lock (_lock)
             {
                 _elasticClient.DeleteByQuery<ElasticBeatmap>(x => x);
