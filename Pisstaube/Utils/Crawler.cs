@@ -181,12 +181,6 @@ namespace Pisstaube.Utils
                 if (dbSet == null)
                     return false;
                 
-                lock (_lock)
-                {
-                    _context.BeatmapSet.Add(dbSet);
-                    _context.SaveChanges();
-                }
-
                 foreach (var map in dbSet.ChildrenBeatmaps)
                 {
                     var fileInfo = _downloader.Download(map);
@@ -196,6 +190,12 @@ namespace Pisstaube.Utils
                         .Where(cmap => cmap.Hash == fileInfo.Hash)
                         .Select(cmap => cmap.FileMd5)
                         .FirstOrDefault();
+                }
+                
+                lock (_lock)
+                {
+                    _context.BeatmapSet.Add(dbSet);
+                    _context.SaveChanges();
                 }
 
                 _search.IndexBeatmap(dbSet);
