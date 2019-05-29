@@ -25,21 +25,20 @@ namespace Pisstaube.Online
         
         public FileInfo Download(ChildrenBeatmap beatmap)
         {
-            var osuFileString = $"{beatmap.Parent.Artist} - {beatmap.Parent.Title} ({beatmap.Parent.Creator}) [{beatmap.DiffName}].osu";
             var req = new FileWebRequest(
-                _tmpStorage.GetFullPath(osuFileString.GetHashCode().ToString(), true),
-                $"https://osu.ppy.sh/osu/{osuFileString}");
+                _tmpStorage.GetFullPath(beatmap.BeatmapId.ToString(), true),
+                $"https://osu.ppy.sh/osu/{beatmap.BeatmapId}");
             req.Perform();
 
             FileInfo info;
-            using (var f = _tmpStorage.GetStream(osuFileString.GetHashCode().ToString(), FileAccess.Read, FileMode.Open))
+            using (var f = _tmpStorage.GetStream(beatmap.BeatmapId.ToString(), FileAccess.Read, FileMode.Open))
             using (var db = _cache.GetForWrite())
             {
                 info = _store.Add(f);
                 db.Context.CacheBeatmaps.Add(new Beatmap {BeatmapId = beatmap.BeatmapId, Hash = info.Hash, FileMd5 = f.ComputeMD5Hash()});
             }
             
-            _tmpStorage.Delete(osuFileString);
+            _tmpStorage.Delete(beatmap.BeatmapId.ToString());
 
             return info;
         }
