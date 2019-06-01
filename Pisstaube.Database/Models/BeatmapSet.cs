@@ -1,18 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using Newtonsoft.Json;
 using opi.v1;
 using osu.Game.Beatmaps;
-using osu.Game.Online.API.Requests.Responses;
+using Shared.Helpers;
+using Shared.Interfaces;
 
 namespace Pisstaube.Database.Models
 {
-    public class BeatmapSet
+    [Serializable]
+    public class BeatmapSet : ISerializer
     {
-        [Key]
         [Required]
+        [Key]
         [JsonProperty("SetID")]
         public int SetId { get; set; }
 
@@ -86,6 +87,58 @@ namespace Pisstaube.Database.Models
                 beatmapSet.ChildrenBeatmaps.Add(ChildrenBeatmap.FromBeatmapInfo(map, beatmapSet));
 
             return beatmapSet;
+        }
+
+        public void ReadFromStream(MStreamReader sr)
+        {
+            SetId = sr.ReadInt32();
+
+            var count = sr.ReadInt32();
+            ChildrenBeatmaps = new List<ChildrenBeatmap>();
+            for (var i = 0; i < count; i++)
+                ChildrenBeatmaps.Add(sr.ReadData<ChildrenBeatmap>());
+
+            RankedStatus = (BeatmapSetOnlineStatus) sr.ReadByte();
+
+            if (DateTime.TryParse(sr.ReadString(), out var res))
+                ApprovedDate = res;
+            
+            if (DateTime.TryParse(sr.ReadString(), out res))
+                LastUpdate = res;
+            
+            if (DateTime.TryParse(sr.ReadString(), out res))
+                LastChecked = res;
+
+            Artist = sr.ReadString();
+            Title = sr.ReadString();
+            Creator = sr.ReadString();
+            Source = sr.ReadString();
+            Tags = sr.ReadString();
+            HasVideo = sr.ReadBoolean();
+            Genre = (Genre) sr.ReadByte();
+            Language = (Language) sr.ReadByte();
+            Favourites = sr.ReadInt64();
+        }
+
+        public void WriteToStream(MStreamWriter sw)
+        {
+            sw.Write(SetId);
+            sw.Write(ChildrenBeatmaps.Count);
+            foreach (var bm in ChildrenBeatmaps)
+                sw.Write(bm);
+            sw.Write((byte) RankedStatus);
+            sw.Write(ApprovedDate?.ToString(), true);
+            sw.Write(LastUpdate?.ToString(), true);
+            sw.Write(LastChecked?.ToString(), true);
+            sw.Write(Artist, true);
+            sw.Write(Title, true);
+            sw.Write(Creator, true);
+            sw.Write(Source, true);
+            sw.Write(Tags, true);
+            sw.Write(HasVideo);
+            sw.Write((byte) Genre);
+            sw.Write((byte) Language);
+            sw.Write(Favourites);
         }
     }
 }

@@ -1,11 +1,15 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
 using opi.v1;
 using osu.Game.Beatmaps;
+using Shared.Helpers;
+using Shared.Interfaces;
 
 namespace Pisstaube.Database.Models
 {
-    public class ChildrenBeatmap
+    [Serializable]
+    public class ChildrenBeatmap : ISerializer
     {
         [Key]
         [Required]
@@ -85,6 +89,44 @@ namespace Pisstaube.Database.Models
             cb.DifficultyRating = info.StarDifficulty;
 
             return cb;
+        }
+
+        public void ReadFromStream(MStreamReader sr)
+        {
+            BeatmapId = sr.ReadInt32();
+            ParentSetId = sr.ReadInt32();
+            DiffName = sr.ReadString();
+            FileMd5 = sr.ReadString();
+            Mode = (PlayMode) sr.ReadByte();
+            Bpm = sr.ReadSingle();
+            Ar = sr.ReadSingle();
+            Od = sr.ReadSingle();
+            Cs = sr.ReadSingle();
+            Hp = sr.ReadSingle();
+            TotalLength = sr.ReadInt32();
+            Playcount = sr.ReadInt32();
+            Passcount = sr.ReadInt32();
+            MaxCombo = sr.ReadInt64();
+            DifficultyRating = sr.ReadDouble();
+        }
+
+        public void WriteToStream(MStreamWriter sw)
+        {
+            sw.Write(BeatmapId);
+            sw.Write(ParentSetId);
+            sw.Write(DiffName, true);
+            sw.Write(FileMd5, true);
+            sw.Write((byte) Mode);
+            sw.Write(Bpm);
+            sw.Write(Ar);
+            sw.Write(Od);
+            sw.Write(Cs);
+            sw.Write(Hp);
+            sw.Write(TotalLength);
+            sw.Write(Playcount);
+            sw.Write(Passcount);
+            sw.Write(MaxCombo);
+            sw.Write(DifficultyRating);
         }
     }
 }
