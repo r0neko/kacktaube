@@ -107,17 +107,12 @@ namespace Pisstaube.Database
                 {
                     var map = _contextFactory.Get().BeatmapSet.First(set => set.SetId == hit.Source.SetId);
                     map.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(cb => cb.Parent == map).ToList();
-                    if (!map.Tags.Contains("\\\""))
-                        map.Tags = map.Tags.Replace("\"", "\\\"");
-                    if (!map.Artist.Contains("\\\""))
-                        map.Artist = map.Artist.Replace("\"", "\\\"");
-                    if (!map.Creator.Contains("\\\""))
-                        map.Creator = map.Creator.Replace("\"", "\\\"");
-                    if (!map.Title.Contains("\\\""))
-                        map.Title = map.Title.Replace("\"", "\\\"");
+                    map.Tags = map.Tags.Replace("\"", "");
+                    map.Artist = map.Artist.Replace("\"", "");
+                    map.Creator = map.Creator.Replace("\"", "");
+                    map.Title = map.Title.Replace("\"", "");
                     foreach (var mapChildrenBeatmap in map.ChildrenBeatmaps)
-                        if (!mapChildrenBeatmap.DiffName.Contains("\\\""))
-                            mapChildrenBeatmap.DiffName = mapChildrenBeatmap.DiffName.Replace("\"", "\\\"");
+                        mapChildrenBeatmap.DiffName = mapChildrenBeatmap.DiffName.Replace("\"", "");
                     return map;
                 }));
             }
@@ -134,17 +129,12 @@ namespace Pisstaube.Database
                 foreach (var set in sets)
                 {
                     set.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(cb => cb.Parent == set).ToList();
-                    if (!set.Tags.Contains("\\\""))
-                        set.Tags = set.Tags.Replace("\"", "\\\"");
-                    if (!set.Artist.Contains("\\\""))
-                        set.Artist = set.Artist.Replace("\"", "\\\"");
-                    if (!set.Creator.Contains("\\\""))
-                        set.Creator = set.Creator.Replace("\"", "\\\"");
-                    if (!set.Title.Contains("\\\""))
-                        set.Title = set.Title.Replace("\"", "\\\"");
+                    set.Tags = set.Tags.Replace("\"", "");
+                    set.Artist = set.Artist.Replace("\"", "");
+                    set.Creator = set.Creator.Replace("\"", "");
+                    set.Title = set.Title.Replace("\"", "");
                     foreach (var mapChildrenBeatmap in set.ChildrenBeatmaps)
-                        if (!mapChildrenBeatmap.DiffName.Contains("\\\""))
-                            mapChildrenBeatmap.DiffName = mapChildrenBeatmap.DiffName.Replace("\"", "\\\"");
+                        mapChildrenBeatmap.DiffName = mapChildrenBeatmap.DiffName.Replace("\"", "");
                     
                 }
             }
