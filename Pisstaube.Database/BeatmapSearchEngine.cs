@@ -107,6 +107,12 @@ namespace Pisstaube.Database
                 {
                     var map = _contextFactory.Get().BeatmapSet.First(set => set.SetId == hit.Source.SetId);
                     map.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(cb => cb.Parent == map).ToList();
+                    map.Tags = map.Tags.Replace("\"", "\\\"");
+                    map.Artist = map.Artist.Replace("\"", "\\\"");
+                    map.Creator = map.Creator.Replace("\"", "\\\"");
+                    map.Title = map.Creator.Replace("\"", "\\\"");
+                    foreach (var mapChildrenBeatmap in map.ChildrenBeatmaps)
+                        mapChildrenBeatmap.DiffName = mapChildrenBeatmap.DiffName.Replace("\"", "\\\"");
                     return map;
                 }));
             }
@@ -121,7 +127,16 @@ namespace Pisstaube.Database
                     .ToList();
 
                 foreach (var set in sets)
+                {
                     set.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(cb => cb.Parent == set).ToList();
+                    set.Tags = set.Tags.Replace("\"", "\\\"");
+                    set.Artist = set.Artist.Replace("\"", "\\\"");
+                    set.Creator = set.Creator.Replace("\"", "\\\"");
+                    set.Title = set.Creator.Replace("\"", "\\\"");
+                    foreach (var mapChildrenBeatmap in set.ChildrenBeatmaps)
+                        mapChildrenBeatmap.DiffName = mapChildrenBeatmap.DiffName.Replace("\"", "\\\"");
+                    
+                }
             }
 
             return sets;
