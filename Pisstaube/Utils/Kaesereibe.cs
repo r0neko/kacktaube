@@ -2,9 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using osu.Framework.IO.Network;
 using osu.Framework.Logging;
-using osu.Game.Online.API;
-using osu.Game.Online.API.Requests;
 using osu.Game.Rulesets;
 using Pisstaube.CacheDb;
 using Pisstaube.Database;
@@ -14,42 +13,26 @@ using StatsdClient;
 
 namespace Pisstaube.Utils
 {
-    public class Crawler : ICrawler
+    public class Kaesereibe : ICrawler
     {
         private bool _should_stop;
         private bool _force_stop;
         private int _fail_count;
-        private int _request_count;
-        
+
         public int LatestId { get; private set; }
         public bool IsCrawling { get; private set; }
         
         private object _lock = new object();
         private List<Thread> _pool;
-
-        private readonly BeatmapSearchEngine _search;
-        private readonly APIAccess _apiAccess;
-        private readonly RulesetStore _store;
-        private readonly BeatmapDownloader _downloader;
-        private readonly PisstaubeCacheDbContextFactory _cache;
+        
         private readonly PisstaubeDbContextFactory _contextFactory;
         private readonly int _workerThreads;
         private Thread _thread_restarter;
         private Thread _dd_thread;
 
-        public Crawler(BeatmapSearchEngine search,
-            APIAccess apiAccess,
-            RulesetStore store,
-            BeatmapDownloader downloader,
-            PisstaubeCacheDbContextFactory cache,
-            PisstaubeDbContextFactory contextFactory)
+        public Kaesereibe(PisstaubeDbContextFactory contextFactory)
         {
             _pool = new List<Thread>();
-            _search = search;
-            _apiAccess = apiAccess;
-            _store = store;
-            _downloader = downloader;
-            _cache = cache;
             _contextFactory = contextFactory;
             _workerThreads = int.Parse(Environment.GetEnvironmentVariable("CRAWLER_THREADS"));
         }
@@ -141,82 +124,60 @@ namespace Pisstaube.Utils
 
         private void _crawl()
         {
-            
-                lock (_lock)
-                    if (LatestId == 0)
-                        LatestId = _contextFactory.Get().BeatmapSet.LastOrDefault()?.SetId + 1 ?? 0;
+            lock (_lock)
+                if (LatestId == 0)
+                    LatestId = _contextFactory.Get().BeatmapSet.LastOrDefault()?.SetId + 1 ?? 0;
                 
-                while (!_should_stop)
+            while (!_should_stop)
+            {
+                int id;
+                lock (_lock)
+                    id = LatestId++;
+                using (var db = _contextFactory.GetForWrite())
                 {
-                    int id;
-                    lock (_lock)
-                        id = LatestId++;
-                    
-                    using (var db = _contextFactory.GetForWrite()) {
-                        if (!Crawl(id, db.Context))
-                            _fail_count++;
-                        else
-                            _fail_count = 0;
-                    }
-
-                    if (_fail_count > 50) // We failed 50 times, lets try tomorrow again! maybe there are new exciting beatmaps!
-                        _should_stop = true;
+                    if (!Crawl(id, db.Context))
+                        _fail_count++;
+                    else
+                        _fail_count = 0;
                 }
 
+                if (_fail_count > 1000)
+                    _should_stop = true;
+            }
         }
 
         public bool Crawl(int id, PisstaubeDbContext _context)
         {
             try
             {
-                while (!_apiAccess.IsLoggedIn)
-                    Thread.Sleep(1000);
+                var setRequest = new JsonWebRequest<BeatmapSet>($"https://{Environment.GetEnvironmentVariable("CHEESEGULL_API")}/api/s/{id}");
 
-                var setRequest = new GetBeatmapSetRequest(id);
-
-                lock (_lock)
-                    _request_count++;
-
-                setRequest.Perform(_apiAccess);
-                
-                lock (_lock)
-                    if (_request_count > int.Parse(Environment.GetEnvironmentVariable("CRAWLER_REQUESTS_PER_MINUTE")))
-                        Thread.Sleep(TimeSpan.FromMinutes(1));
-
-                var apiSet = setRequest.Result;
-
-                var localSet = apiSet?.ToBeatmapSet(_store);
-                if (localSet == null)
-                    return false;
-
-                var dbSet = BeatmapSet.FromBeatmapSetInfo(localSet);
-                if (dbSet == null)
-                    return false;
-                
-                foreach (var map in dbSet.ChildrenBeatmaps)
+                try
                 {
-                    var fileInfo = _downloader.Download(map);
-                    
-                    map.FileMd5 = _cache.Get()
-                        .CacheBeatmaps
-                        .Where(cmap => cmap.Hash == fileInfo.Hash)
-                        .Select(cmap => cmap.FileMd5)
-                        .FirstOrDefault();
+                    setRequest.Perform();
                 }
-                
-                lock (_lock)
+                catch
                 {
-                    _context.BeatmapSet.Add(dbSet);
+                    if (!setRequest.ResponseString.StartsWith("null"))
+                        throw;
                 }
 
-                _search.IndexBeatmap(dbSet);
+                var apiSet = setRequest.ResponseObject;
+                if (apiSet == null)
+                    return false;
+
+                lock (_lock)
+                {
+                    _context.BeatmapSet.Add(apiSet);
+                    _context.SaveChanges();
+                }
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, $"Unknown Error occured while crawling Id {id}!");
                 
-                lock (_lock)
-                    Thread.Sleep(TimeSpan.FromMinutes(1));
+                // lock (_lock)
+                    // Thread.Sleep(TimeSpan.FromMinutes(1));
                 return false;
             }
             

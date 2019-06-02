@@ -30,6 +30,7 @@ namespace Pisstaube
             dataStorage = new NativeStorage("data");
             osuContextFactory = new DatabaseContextFactory(dataStorage);
             cacheContextFactory = new PisstaubeCacheDbContextFactory(dataStorage);
+            dbContextFactory = new PisstaubeDbContextFactory();
             
             // copy paste of OsuGameBase.cs
             try
@@ -64,15 +65,12 @@ namespace Pisstaube
 
         private readonly DatabaseContextFactory osuContextFactory;
         private readonly PisstaubeCacheDbContextFactory cacheContextFactory;
+        private readonly PisstaubeDbContextFactory dbContextFactory;
         private readonly NativeStorage dataStorage;
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            if (Environment.GetEnvironmentVariable("LOG_LEVEL") != null)
-                if (Enum.TryParse(Environment.GetEnvironmentVariable("LOG_LEVEL"), out LogLevel level))
-                    Logger.Level = level;
-
             services
                 .AddDbContext<PisstaubeDbContext>();
 
@@ -81,13 +79,15 @@ namespace Pisstaube
                 .AddSingleton<BeatmapSearchEngine>()
                 .AddSingleton<Storage>(dataStorage)
                 .AddSingleton(cacheContextFactory)
+                .AddSingleton(dbContextFactory)
                 .AddSingleton<OsuConfigManager>()
                 .AddSingleton<APIAccess>()
                 .AddSingleton<Cleaner>()
                 .AddSingleton(new FileStore(osuContextFactory, dataStorage))
                 .AddSingleton(new RulesetStore(osuContextFactory))
                 .AddSingleton<BeatmapDownloader>()
-                .AddSingleton<Crawler>();
+                .AddSingleton<Crawler>()
+                .AddSingleton<Kaesereibe>();
             
             services
                 .AddMvc(options =>
@@ -107,8 +107,14 @@ namespace Pisstaube
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env,
-            Crawler crawler, APIAccess apiv2)
+            Crawler crawler, APIAccess apiv2, Kaesereibe reibe)
         {
+            if (Environment.GetEnvironmentVariable("LOG_LEVEL") != null)
+                if (Enum.TryParse(Environment.GetEnvironmentVariable("LOG_LEVEL"), out LogLevel level))
+                    Logger.Level = level;
+
+            Logger.Storage = dataStorage.GetStorageForDirectory("logs");
+            
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
             else
@@ -124,6 +130,11 @@ namespace Pisstaube
                 crawler.BeginCrawling();
             else
                 DogStatsd.ServiceCheck("crawler.is_crawling", Status.CRITICAL);
+
+            if (Environment.GetEnvironmentVariable("CHEESEGULL_CRAWLER_DISABLED") != "true")
+                reibe.BeginCrawling();
+            else
+                DogStatsd.ServiceCheck("kaesereibe.is_crawling", Status.CRITICAL);
 
             if (!Directory.Exists("data"))
                 Directory.CreateDirectory("data");

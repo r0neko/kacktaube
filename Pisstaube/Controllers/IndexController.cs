@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
@@ -24,20 +25,20 @@ namespace Pisstaube.Controllers
         private readonly Cleaner _cleaner;
         private readonly Storage _storage;
         private readonly Storage _fileStorage;
-        private readonly PisstaubeDbContext _context;
+        private readonly PisstaubeDbContextFactory _contextFactory;
         private readonly PisstaubeCacheDbContextFactory _cache;
         
         public IndexController(APIAccess apiAccess,
             Cleaner cleaner,
             Storage storage,
-            PisstaubeDbContext context,
-            PisstaubeCacheDbContextFactory cache)
+            PisstaubeCacheDbContextFactory cache,
+            PisstaubeDbContextFactory contextFactory)
         {
             _apiAccess = apiAccess;
             _cleaner = cleaner;
             _storage = storage;
-            _context = context;
             _cache = cache;
+            _contextFactory = contextFactory;
             _fileStorage = storage.GetStorageForDirectory("files");
         }
         
@@ -45,8 +46,15 @@ namespace Pisstaube.Controllers
         [HttpGet]
         public ActionResult Get()
         {
-            // Please dont remove (Written by Mempler)!
-            return Ok("Running Pisstaube, a fuck off of cheesegull Written by Mempler available on Github under MIT License!");
+            var f = _storage.GetStream("pisse.html", FileAccess.ReadWrite);
+                
+            if (f.Length == 0) {
+                f.Write(Encoding.UTF8.GetBytes("Running Pisstaube, a fuck off of cheesegull Written by Mempler available on Github under MIT License!"));
+                f.Flush();
+                f.Position = 0;
+            }
+
+            return Ok(f);
         }
 
         // GET /osu/:beatmapId
@@ -93,7 +101,7 @@ namespace Pisstaube.Controllers
                 _storage.GetFullPath("cache", true);
 
             BeatmapSet set;
-            if ((set = _context.BeatmapSet.FirstOrDefault(bmset => bmset.SetId == beatmapSetId)) == null)
+            if ((set = _contextFactory.Get().BeatmapSet.FirstOrDefault(bmset => bmset.SetId == beatmapSetId)) == null)
                 return NotFound("Set not found");
             
             var cacheStorage = _storage.GetStorageForDirectory("cache");
