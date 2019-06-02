@@ -35,7 +35,7 @@ services:
       - http.host=0.0.0.0
       - transport.host=127.0.0.1
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTICSEARCH_HEAP_SIZE=2G
     ulimits:
       memlock:
         soft: -1
