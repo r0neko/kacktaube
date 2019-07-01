@@ -32,6 +32,7 @@ namespace Pisstaube.Utils
         private readonly RulesetStore _store;
         private readonly BeatmapDownloader _downloader;
         private readonly PisstaubeCacheDbContextFactory _cache;
+        private readonly RequestLimiter _rl;
         private readonly PisstaubeDbContextFactory _contextFactory;
         private readonly int _workerThreads;
         private Thread _thread_restarter;
@@ -42,6 +43,7 @@ namespace Pisstaube.Utils
             RulesetStore store,
             BeatmapDownloader downloader,
             PisstaubeCacheDbContextFactory cache,
+            RequestLimiter rl,
             PisstaubeDbContextFactory contextFactory)
         {
             _pool = new List<Thread>();
@@ -50,6 +52,7 @@ namespace Pisstaube.Utils
             _store = store;
             _downloader = downloader;
             _cache = cache;
+            _rl = rl;
             _contextFactory = contextFactory;
             _workerThreads = int.Parse(Environment.GetEnvironmentVariable("CRAWLER_THREADS"));
         }
@@ -141,28 +144,26 @@ namespace Pisstaube.Utils
 
         private void _crawl()
         {
-            
-                lock (_lock)
+            lock (_lock)
                     if (LatestId == 0)
                         LatestId = _contextFactory.Get().BeatmapSet.LastOrDefault()?.SetId + 1 ?? 0;
                 
-                while (!_should_stop)
-                {
-                    int id;
-                    lock (_lock)
-                        id = LatestId++;
+            while (!_should_stop)
+            {
+                int id;
+                lock (_lock)
+                    id = LatestId++;
                     
-                    using (var db = _contextFactory.GetForWrite()) {
-                        if (!Crawl(id, db.Context))
-                            _fail_count++;
-                        else
-                            _fail_count = 0;
-                    }
-
-                    if (_fail_count > 50) // We failed 50 times, lets try tomorrow again! maybe there are new exciting beatmaps!
-                        _should_stop = true;
+                using (var db = _contextFactory.GetForWrite()) {
+                    if (!Crawl(id, db.Context))
+                        _fail_count++;
+                    else
+                        _fail_count = 0;
                 }
 
+                if (_fail_count > 50) // We failed 50 times, lets try tomorrow again! maybe there are new exciting beatmaps!
+                    _should_stop = true;
+            }
         }
 
         public bool Crawl(int id, PisstaubeDbContext _context)
@@ -177,6 +178,7 @@ namespace Pisstaube.Utils
                 lock (_lock)
                     _request_count++;
 
+                _rl.Limit();
                 setRequest.Perform(_apiAccess);
                 
                 lock (_lock)

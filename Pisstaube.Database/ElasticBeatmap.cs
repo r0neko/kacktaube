@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Elasticsearch.Net;
 using Microsoft.EntityFrameworkCore.Internal;
+using Nest;
 using Newtonsoft.Json;
 using opi.v1;
 using osu.Game.Beatmaps;
@@ -10,9 +11,10 @@ using Pisstaube.Database.Models;
 
 namespace Pisstaube.Database
 {
+    [ElasticsearchType(IdProperty = nameof(Id))]
     public class ElasticBeatmap
     {
-        public int SetId;
+        public int Id;
         public BeatmapSetOnlineStatus RankedStatus;
 
         public string Artist;
@@ -26,7 +28,7 @@ namespace Pisstaube.Database
 
         public override string ToString()
         {
-            return $"SetId: {SetId}\n" +
+            return $"SetId: {Id}\n" +
                    $"RankedStatus: {RankedStatus}\n" +
                    $"Artist: {Artist}\n" +
                    $"Title: {Title}\n" +
@@ -37,20 +39,20 @@ namespace Pisstaube.Database
                    $"ApprovedDate: {ApprovedDate}";
         }
 
-        public static ElasticBeatmap GetElasticBeatmap(BeatmapSet bmset)
+        public static ElasticBeatmap GetElasticBeatmap(BeatmapSet bmSet)
         {
             var bm = new ElasticBeatmap
             {
-                SetId = bmset.SetId,
-                Artist = bmset.Artist,
-                Creator = bmset.Creator,
-                RankedStatus = bmset.RankedStatus,
-                Mode = bmset.ChildrenBeatmaps.Select(cb => cb.Mode).ToList(),
-                Tags = bmset.Tags.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).ToList(),
-                Title = bmset.Title,
-                DiffName = bmset.ChildrenBeatmaps.Select(cb => cb.DiffName).ToList(),
+                Id = bmSet.SetId,
+                Artist = bmSet.Artist,
+                Creator = bmSet.Creator,
+                RankedStatus = bmSet.RankedStatus,
+                Mode = bmSet.ChildrenBeatmaps.Select(cb => cb.Mode).ToList(),
+                Tags = bmSet.Tags.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).ToList(),
+                Title = bmSet.Title,
+                DiffName = bmSet.ChildrenBeatmaps.Select(cb => cb.DiffName).ToList(),
                 ApprovedDate =
-                    (bmset.ApprovedDate?.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalSeconds ?? 0)
+                    bmSet.ApprovedDate?.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, 0)).TotalSeconds ?? 0
             };
             return bm;
         }

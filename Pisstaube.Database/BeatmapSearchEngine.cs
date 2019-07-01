@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Amib.Threading;
 using Elasticsearch.Net;
 using Nest;
 using opi.v1;
@@ -15,41 +16,75 @@ namespace Pisstaube.Database
     {
         private readonly PisstaubeDbContextFactory _contextFactory;
         private readonly ElasticClient _elasticClient;
-        private static object _lock = new object();
+        private readonly SmartThreadPool _pool;
         
         public BeatmapSearchEngine(PisstaubeDbContextFactory contextFactory)
         {
             _contextFactory = contextFactory;
-            var settings = new ConnectionSettings(new Uri($"http://{Environment.GetEnvironmentVariable("ELASTIC_HOSTNAME")}:{Environment.GetEnvironmentVariable("ELASTIC_PORT")}"))
+            _pool = new SmartThreadPool();
+            _pool.MaxThreads = Environment.ProcessorCount * 16;
+            _pool.Start();
+
+            var settings = new ConnectionSettings(
+                    new Uri(
+                        $"http://{Environment.GetEnvironmentVariable("ELASTIC_HOSTNAME")}:{Environment.GetEnvironmentVariable("ELASTIC_PORT")}"
+                    )
+                )
                 .DefaultIndex("pisstaube");
 
             _elasticClient = new ElasticClient(settings);
             _elasticClient.CreateIndex("pisstaube");
         }
+        
+        private static int xi;
+        private void rIndexBeatmap(BeatmapSet set)
+        {
+            if (xi++ % 10000 == 0)
+                Logger.LogPrint($"Index ElasticBeatmap of Id {set.SetId}");
+                    
+            _elasticClient.DeleteByQuery<ElasticBeatmap>(
+                x =>
+                    x.Query(query => query.Exists(exists => exists.Field(field => field.Id == set.SetId)))
+            );
+            var map = ElasticBeatmap.GetElasticBeatmap(set);
 
+            //Logger.LogPrint($"Index ElasticBeatmap of Id {set.SetId}");
+
+            var result = _elasticClient.IndexDocument(map);
+            if (!result.IsValid)
+                Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
+        }
         public void IndexBeatmap(BeatmapSet set)
         {
-            lock (_lock)
-            {
-                _elasticClient.DeleteByQuery<ElasticBeatmap>(x =>
-                    x.Query(query => query.Exists(exists => exists.Field(field => field.SetId == set.SetId))));
-                var map = ElasticBeatmap.GetElasticBeatmap(set);
+            _pool.QueueWorkItem(rIndexBeatmap, set);
+        }
 
-                Logger.LogPrint($"Index ElasticBeatmap of Id {set.SetId}");
-                
-                var result = _elasticClient.IndexDocument(map);
-                if (!result.IsValid)
-                    Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
+        public void IndexBeatmapSets(IEnumerable<BeatmapSet> sets)
+        {
+            foreach (var set in sets)
+            {
+                IndexBeatmap(set);
             }
         }
 
         public void DeleteAllBeatmaps()
         {
             Logger.LogPrint("Deleting all Beatmaps from ElasticSearch!");
-            lock (_lock)
-            {
-                _elasticClient.DeleteByQuery<ElasticBeatmap>(x => x);
-            }
+            _elasticClient.DeleteByQuery<ElasticBeatmap>(x => x.MatchAll());
+        }
+
+        public void DeleteBeatmap(int setId)
+        {
+            _elasticClient.DeleteByQuery<ElasticBeatmap>(x => x.Query(q =>
+                q.Bool(b =>
+                    b.Must(m =>
+                        m.Term(t =>
+                            t.Field(bm => bm.Id).Value(setId)
+                            )
+                        )
+                    )
+                )
+            );
         }
 
         public List<BeatmapSet> Search(string query,
@@ -62,9 +97,10 @@ namespace Pisstaube.Database
                 amount = 100;
             
             var sets = new List<BeatmapSet>();
+            
             if (!string.IsNullOrWhiteSpace(query))
-            {
-                var result = _elasticClient.Search<ElasticBeatmap>(s =>
+            { 
+                var result =_elasticClient.Search<ElasticBeatmap>(s =>
                 {
                     var ret = s
                         .From(offset)
@@ -82,7 +118,7 @@ namespace Pisstaube.Database
                                             if (mode != PlayMode.All)
                                                 res &= must.Term(term => term.Field(p => p.Mode)
                                                     .Value(mode));
-
+                                            
                                             return res;
                                         }
                                     )
@@ -101,42 +137,65 @@ namespace Pisstaube.Database
                 });
 
                 if (!result.IsValid)
-                    Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
-
-                sets.AddRange(result.Hits.Select(hit =>
                 {
-                    var map = _contextFactory.Get().BeatmapSet.First(set => set.SetId == hit.Source.SetId);
-                    map.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(cb => cb.Parent == map).ToList();
-                    map.Tags = map.Tags.Replace("\"", "");
-                    map.Artist = map.Artist.Replace("\"", "");
-                    map.Creator = map.Creator.Replace("\"", "");
-                    map.Title = map.Title.Replace("\"", "");
-                    foreach (var mapChildrenBeatmap in map.ChildrenBeatmaps)
-                        mapChildrenBeatmap.DiffName = mapChildrenBeatmap.DiffName.Replace("\"", "");
-                    return map;
-                }));
+                    Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
+                    return null;
+                }
+                
+                var r = result.Hits.Select(
+                    hit => hit != null ? _contextFactory.Get().BeatmapSet.FirstOrDefault(set => set.SetId == hit.Source.Id) : null
+                );
+                sets.AddRange(r);
+
+                var newSets = new List<BeatmapSet>();
+                
+                foreach (var s in sets)
+                {
+                    if (s == null)
+                        continue;
+                    
+                    newSets.Add(s);
+                    if (s.ChildrenBeatmaps == null)
+                        s.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(cb => cb.ParentSetId == s.SetId).ToList();
+                }
+
+                sets = newSets;
             }
             else
             {
-                sets = _contextFactory.Get().BeatmapSet.Where(set => (rankedStatus == null || set.RankedStatus == rankedStatus) &&
-                                                                     _contextFactory.Get().Beatmaps.Where(cb => cb.ParentSetId == set.SetId)
-                                                            .FirstOrDefault(cb => mode == PlayMode.All || cb.Mode == mode) != null)
-                    .OrderByDescending(x => x.ApprovedDate)
-                    .Skip(offset)
-                    .Take(amount)
-                    .ToList();
+                var sSets = _contextFactory.Get().BeatmapSet
+                                           .Where(
+                                               set => (
+                                                      rankedStatus == null || set.RankedStatus == rankedStatus) &&
+                                                      _contextFactory.Get().Beatmaps.Where(
+                                                                         cb => cb.ParentSetId == set.SetId
+                                                                     )
+                                                                     .FirstOrDefault(
+                                                                         cb => mode == PlayMode.All || cb.Mode == mode
+                                                                     ) != null
+                                                )
+                                           .OrderByDescending(x => x.ApprovedDate)
+                                           .Skip(offset)
+                                           .Take(amount);
 
-                foreach (var set in sets)
+                foreach (var s in sSets)
                 {
-                    set.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(cb => cb.Parent == set).ToList();
-                    set.Tags = set.Tags.Replace("\"", "");
-                    set.Artist = set.Artist.Replace("\"", "");
-                    set.Creator = set.Creator.Replace("\"", "");
-                    set.Title = set.Title.Replace("\"", "");
-                    foreach (var mapChildrenBeatmap in set.ChildrenBeatmaps)
-                        mapChildrenBeatmap.DiffName = mapChildrenBeatmap.DiffName.Replace("\"", "");
-                    
+                    if (s.ChildrenBeatmaps == null)
+                        s.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(cb => cb.ParentSetId == s.SetId).ToList();
                 }
+
+                sets = sSets.ToList();
+            }
+
+            foreach (var s in sets)
+            {
+                // Fixes an Issue where osu!direct may not load!
+                s.Artist = s.Artist.Replace("|", "");
+                s.Title = s.Title.Replace("|", "");
+                s.Creator = s.Creator.Replace("|", "");
+
+                foreach (var bm in s.ChildrenBeatmaps)
+                    bm.DiffName =  bm.DiffName.Replace("|", "");
             }
 
             return sets;

@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using osu.Game.IO;
 
 namespace Pisstaube.CacheDb.Models
 {

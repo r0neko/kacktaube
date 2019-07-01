@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
-using opi.v1;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
 
@@ -14,18 +12,12 @@ namespace Pisstaube.Controllers
     {
         private readonly PisstaubeDbContextFactory _contextFactory;
 
-        public HashController(PisstaubeDbContextFactory contextFactory)
-        {
-            _contextFactory = contextFactory;
-        }
-        
+        public HashController(PisstaubeDbContextFactory contextFactory) => _contextFactory = contextFactory;
+
         // GET /api/hash
         [HttpGet]
-        public ActionResult<List<BeatmapSet>> Get()
-        {
-            return null;
-        }
-        
+        public ActionResult<List<BeatmapSet>> Get() => null;
+
         // GET /api/hash/:FileMd5
         [HttpGet("{hash}")]
         public ActionResult<BeatmapSet> Get(string hash)

@@ -26,14 +26,16 @@ namespace Pisstaube.Utils
         private List<Thread> _pool;
         
         private readonly PisstaubeDbContextFactory _contextFactory;
+        private readonly BeatmapSearchEngine _searchEngine;
         private readonly int _workerThreads;
         private Thread _thread_restarter;
         private Thread _dd_thread;
 
-        public Kaesereibe(PisstaubeDbContextFactory contextFactory)
+        public Kaesereibe(PisstaubeDbContextFactory contextFactory, BeatmapSearchEngine searchEngine)
         {
             _pool = new List<Thread>();
             _contextFactory = contextFactory;
+            _searchEngine = searchEngine;
             _workerThreads = int.Parse(Environment.GetEnvironmentVariable("CRAWLER_THREADS"));
         }
 
@@ -50,7 +52,7 @@ namespace Pisstaube.Utils
                     while (true)
                     {
                         Thread.Sleep(TimeSpan.FromSeconds(30));
-                        lock (_lock) DogStatsd.Set("crawler.latest_id", LatestId);
+                        DogStatsd.Set("crawler.latest_id", LatestId);
                     }
                 });
                 _dd_thread.Start();
@@ -165,12 +167,9 @@ namespace Pisstaube.Utils
                 var apiSet = setRequest.ResponseObject;
                 if (apiSet == null)
                     return false;
-
-                lock (_lock)
-                {
-                    _context.BeatmapSet.Add(apiSet);
-                    _context.SaveChanges();
-                }
+                
+                _searchEngine.IndexBeatmap(apiSet);
+                _context.BeatmapSet.Add(apiSet);
             }
             catch (Exception ex)
             {

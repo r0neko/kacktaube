@@ -4,8 +4,8 @@ using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
 using opi.v1;
 using osu.Game.Beatmaps;
-using Shared.Helpers;
-using Shared.Interfaces;
+using Sora.Helpers;
+using Sora.Interfaces;
 
 namespace Pisstaube.Database.Models
 {
@@ -58,6 +58,9 @@ namespace Pisstaube.Database.Models
 
         [JsonProperty("Favourites")]
         public long Favourites { get; set; }
+        
+        [JsonIgnore]
+        public bool Disabled { get; set; }
 
         public static BeatmapSet FromBeatmapSetInfo(BeatmapSetInfo info)
         {
@@ -84,9 +87,41 @@ namespace Pisstaube.Database.Models
             };
 
             foreach (var map in info.Beatmaps)
-                beatmapSet.ChildrenBeatmaps.Add(ChildrenBeatmap.FromBeatmapInfo(map, beatmapSet));
+                beatmapSet.ChildrenBeatmaps.Add(ChildrenBeatmap.FromBeatmapInfo(map, info.OnlineInfo, beatmapSet));
 
             return beatmapSet;
+        }
+
+        public string ToDirect()
+        {
+            string RetStr;
+            
+            double MaxDiff = 0;
+
+            foreach (var cbm in ChildrenBeatmaps)
+                if (cbm.DifficultyRating > MaxDiff)
+                    MaxDiff = cbm.DifficultyRating;
+
+            MaxDiff *= 1.5;
+
+            RetStr = $"{SetId}.osz|" +
+                      $"{Artist}|" +
+                      $"{Title}|" +
+                      $"{Creator}|" +
+                      $"{(int)RankedStatus}|" +
+                      $"{MaxDiff:0.00}|" +
+                      $"{LastUpdate}Z|" +
+                      $"{SetId}|" +
+                      $"{SetId}|" +
+                      "0|" +
+                      "1234|" +
+                      $"{Convert.ToInt32(HasVideo)}|" +
+                      $"{Convert.ToInt32(HasVideo) * 4321}|";
+
+            foreach (var cb in ChildrenBeatmaps)
+                RetStr += cb.ToDirect();
+            
+            return RetStr.TrimEnd(',') + "|\r\n";
         }
 
         public void ReadFromStream(MStreamReader sr)
@@ -118,6 +153,7 @@ namespace Pisstaube.Database.Models
             Genre = (Genre) sr.ReadSByte();
             Language = (Language) sr.ReadSByte();
             Favourites = sr.ReadInt64();
+            Disabled = sr.ReadBoolean();
         }
 
         public void WriteToStream(MStreamWriter sw)
@@ -139,6 +175,7 @@ namespace Pisstaube.Database.Models
             sw.Write((sbyte) Genre);
             sw.Write((sbyte) Language);
             sw.Write(Favourites);
+            sw.Write(Disabled);
         }
     }
 }

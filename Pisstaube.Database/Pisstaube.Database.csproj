@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp2.2</TargetFramework>
+        <TargetFramework>netcoreapp3.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
@@ -14,11 +14,11 @@
       <PackageReference Include="opi" Version="1.0.1" />
       <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="2.2.0" />
       <PackageReference Include="Pomelo.EntityFrameworkCore.MySql.Design" Version="1.1.2" />
+      <PackageReference Include="SmartThreadPool.NetCore" Version="2.3.0" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\osu\osu.Game\osu.Game.csproj" />
-      <ProjectReference Include="..\Sora\Shared\Shared.csproj" />
+      <ProjectReference Include="..\Sora\Sora\Sora.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -64,7 +64,7 @@ namespace Pisstaube.CacheDb
 
         private void usageCompleted(DBWriteUsage usage)
         {
-            int usages = Interlocked.Decrement(ref currentWriteUsages);
+            var usages = Interlocked.Decrement(ref currentWriteUsages);
 
             try
             {

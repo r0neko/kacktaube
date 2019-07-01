@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
 using opi.v1;
 using osu.Game.Beatmaps;
-using Shared.Helpers;
-using Shared.Interfaces;
+using Sora.Helpers;
+using Sora.Interfaces;
 
 namespace Pisstaube.Database.Models
 {
@@ -32,7 +32,7 @@ namespace Pisstaube.Database.Models
         public PlayMode Mode { get; set; }
 
         [JsonProperty("BPM")]
-        public float Bpm { get; set; }
+        public double Bpm { get; set; }
 
         [JsonProperty("AR")]
         public float Ar { get; set; }
@@ -64,7 +64,7 @@ namespace Pisstaube.Database.Models
         [JsonProperty("DifficultyRating")]
         public double DifficultyRating { get; set; }
 
-        public static ChildrenBeatmap FromBeatmapInfo(BeatmapInfo info, BeatmapSet parent = null)
+        public static ChildrenBeatmap FromBeatmapInfo(BeatmapInfo info, BeatmapSetOnlineInfo setOnlineInfo, BeatmapSet parent = null)
         {
             if (info == null)
                 return null;
@@ -83,16 +83,25 @@ namespace Pisstaube.Database.Models
                 Hp = info.BaseDifficulty.DrainRate,
                 TotalLength = (int) info.OnlineInfo.Length,
                 HitLength = (int) info.StackLeniency,
-                Playcount = info.OnlineInfo.PassCount
+                Playcount = info.OnlineInfo.PassCount,
+                Bpm = setOnlineInfo.BPM,
+                MaxCombo = info.OnlineInfo.CircleCount,
+                DifficultyRating = info.StarDifficulty
             };
-
-            // TODO: check
-            cb.Playcount = info.OnlineInfo.PlayCount;
-            cb.MaxCombo = 0; // TODO: Fix
-            cb.DifficultyRating = info.StarDifficulty;
-
+            
             return cb;
         }
+
+        public string ToDirect() => $"{DiffName.Replace("@", "")} " +
+                                    $"({Math.Round(DifficultyRating, 2)}★~" +
+                                    $"{Bpm}♫~AR" +
+                                    $"{Ar}~OD" +
+                                    $"{Od}~CS" +
+                                    $"{Cs}~HP" +
+                                    $"{Hp}~" +
+                                    $"{(int)MathF.Floor(TotalLength) / 60}m" +
+                                    $"{TotalLength % 60}s)@" +
+                                    $"{(int)Mode},";
 
         public void ReadFromStream(MStreamReader sr)
         {
@@ -101,7 +110,7 @@ namespace Pisstaube.Database.Models
             DiffName = sr.ReadString();
             FileMd5 = sr.ReadString();
             Mode = (PlayMode) sr.ReadSByte();
-            Bpm = sr.ReadSingle();
+            Bpm = sr.ReadInt32();
             Ar = sr.ReadSingle();
             Od = sr.ReadSingle();
             Cs = sr.ReadSingle();

@@ -10,7 +10,7 @@ using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
 using Pisstaube.Utils;
-using Shared.Helpers;
+using Sora.Helpers;
 using Logger = osu.Framework.Logging.Logger;
 
 namespace Pisstaube.Controllers
@@ -32,12 +32,13 @@ namespace Pisstaube.Controllers
         private readonly Crawler _crawler;
         private readonly Cleaner _cleaner;
         private readonly PisstaubeCacheDbContextFactory _cache;
+        private readonly Kaesereibe _reibe;
 
         private static readonly object _lock = new object();
 
         public PrivateAPIController(PisstaubeDbContextFactory contextFactory,
             Storage storage, BeatmapSearchEngine searchEngine, Crawler crawler, Cleaner cleaner,
-            PisstaubeCacheDbContextFactory cache)
+            PisstaubeCacheDbContextFactory cache, Kaesereibe reibe)
         {
             _contextFactory = contextFactory;
             _storage = storage;
@@ -45,6 +46,7 @@ namespace Pisstaube.Controllers
             _crawler = crawler;
             _cleaner = cleaner;
             _cache = cache;
+            _reibe = reibe;
         }
         
         // GET /api/pisstaube/dump?key={KEY}
@@ -177,6 +179,7 @@ namespace Pisstaube.Controllers
                 case RecoveryAction.RepairElastic:
                     Logger.LogPrint("Repairing ElasticSearch");
                     _crawler.Stop();
+                    _reibe.Stop();
 
                     _searchEngine.DeleteAllBeatmaps();
                     
@@ -188,11 +191,16 @@ namespace Pisstaube.Controllers
                     
                     if (Environment.GetEnvironmentVariable("CRAWLER_DISABLED") != "true")
                         _crawler.BeginCrawling();
+                    
+                    if (Environment.GetEnvironmentVariable("CHEESEGULL_CRAWLER_DISABLED") != "true")
+                        _reibe.BeginCrawling();
                     break;
                 case RecoveryAction.RecrawlEverything:
                     Logger.LogPrint("Recrawl Everything!");
                     
                     _crawler.Stop();
+                    _reibe.Stop();
+                    
                     _searchEngine.DeleteAllBeatmaps();
                     using (var db = _contextFactory.GetForWrite()) {
                         db.Context.Database.ExecuteSqlCommand("SET FOREIGN_KEY_CHECKS = 0;" +
@@ -208,7 +216,10 @@ namespace Pisstaube.Controllers
                             "DELETE FROM `CacheBeatmaps`;" +
                             "DELETE FROM `CacheBeatmapSet`;");
                     }
-                    _crawler.BeginCrawling();
+                    if (Environment.GetEnvironmentVariable("CRAWLER_DISABLED") != "true")
+                        _crawler.BeginCrawling();
+                    if (Environment.GetEnvironmentVariable("CHEESEGULL_CRAWLER_DISABLED") != "true")
+                        _reibe.BeginCrawling();
                     break;
                 case RecoveryAction.RecrawlUnknown:
                     Logger.LogPrint("Recrawl All unknown maps!");

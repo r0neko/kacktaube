@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
 using osu.Game.Configuration;
@@ -18,6 +20,7 @@ using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Online;
 using Pisstaube.Utils;
+using Sora.Allocation;
 using StatsdClient;
 
 namespace Pisstaube
@@ -35,6 +38,9 @@ namespace Pisstaube
             // copy paste of OsuGameBase.cs
             try
             {
+                using (var db = dbContextFactory.GetForWrite(false))
+                    db.Context.Database.Migrate();
+                
                 using (var db = osuContextFactory.GetForWrite(false))
                     db.Context.Migrate();
             }
@@ -74,7 +80,11 @@ namespace Pisstaube
             services
                 .AddDbContext<PisstaubeDbContext>();
 
+            services.AddMemoryCache();
+            
             services
+                .AddSingleton<Cache>()
+                .AddSingleton<BMUpdater>()
                 .AddSingleton<PisstaubeDbContext>()
                 .AddSingleton<BeatmapSearchEngine>()
                 .AddSingleton<Storage>(dataStorage)
@@ -87,14 +97,18 @@ namespace Pisstaube
                 .AddSingleton(new RulesetStore(osuContextFactory))
                 .AddSingleton<BeatmapDownloader>()
                 .AddSingleton<Crawler>()
+                .AddSingleton<SetDownloader>()
+                .AddSingleton(new RequestLimiter(1200, TimeSpan.FromMinutes(1)))
                 .AddSingleton<Kaesereibe>();
             
             services
-                .AddMvc(options =>
-                {
-                    options.OutputFormatters.RemoveType<HttpNoContentOutputFormatter>();
-                })
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+                .AddMvc(
+                    options =>
+                    {
+                        options.OutputFormatters.RemoveType<HttpNoContentOutputFormatter>();
+                        options.EnableEndpointRouting = false;
+                    })
+                .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             services.Configure<FormOptions>(x =>
             {
@@ -106,22 +120,28 @@ namespace Pisstaube
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env,
-            Crawler crawler, APIAccess apiv2, Kaesereibe reibe)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
+            Crawler crawler, APIAccess apiv2, Kaesereibe reibe, BeatmapSearchEngine searchEngine, BMUpdater bmUpdater)
         {
             if (Environment.GetEnvironmentVariable("LOG_LEVEL") != null)
                 if (Enum.TryParse(Environment.GetEnvironmentVariable("LOG_LEVEL"), out LogLevel level))
                     Logger.Level = level;
 
             Logger.Storage = dataStorage.GetStorageForDirectory("logs");
-            
+
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
             else
                 app.UseHsts();
 
-            apiv2.Login(Environment.GetEnvironmentVariable("OSU_EMAIL"), Environment.GetEnvironmentVariable("OSU_PASSWORD"));
+            if (searchEngine.Search("test") == null)
+            {
+                Logger.LogPrint("Failed to Connect to ElasticSearch!", LoggingTarget.Network, LogLevel.Error);
+                Environment.Exit(0);
+            }
             
+            apiv2.Login(Environment.GetEnvironmentVariable("OSU_EMAIL"), Environment.GetEnvironmentVariable("OSU_PASSWORD"));
+
             DogStatsd.Configure(new StatsdConfig { Prefix = "pisstaube" });
             
             DogStatsd.ServiceCheck("crawler.is_crawling", Status.UNKNOWN);
@@ -143,11 +163,11 @@ namespace Pisstaube
                 Directory.CreateDirectory("data/cache");
             
             DogStatsd.ServiceCheck("is_active", Status.OK);
+            
+            if (Environment.GetEnvironmentVariable("UPDATER_DISABLED") != "true")
+                bmUpdater.BeginUpdaterAsync();
 
-            app.UseMvc(routes =>
-            {
-                routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}");
-            });
+            app.UseMvc(routes => routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}"));
         }
     }
 }
