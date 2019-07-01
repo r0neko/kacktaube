@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using osu.Framework.IO.File;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
 using osu.Game.Beatmaps;
@@ -129,6 +130,8 @@ namespace Pisstaube.Online
                     
                     db.Context.Entry(newBm).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
                     db.Context.BeatmapSet.Update(newBm);
+                    
+                    FileSafety.DeleteCleanupDirectory();
                 }
             }
         }
