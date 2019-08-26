@@ -14,6 +14,6 @@ COPY --from=build-env /pisstaube/out .
 
 RUN touch .env
 
-VOLUME [ "/app/data" ]
+VOLUME [ "/pisstaube/data" ]
 
 ENTRYPOINT ["dotnet", "Pisstaube.dll"]
