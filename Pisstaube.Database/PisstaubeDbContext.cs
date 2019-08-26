@@ -33,7 +33,7 @@ namespace Pisstaube.Database
             var Db = Environment.GetEnvironmentVariable("MARIADB_DATABASE");
             
             optionsBuilder.UseMySql(
-                $"Server={Host};Database={Db};User={Username};Password={Password};Port={Port};CharSet=utf8mb4;",
+                $"Server={Host};Database={Db};User={Username};Password={Password};Port={Port};CharSet=utf8mb4;SslMode=none;",
                 mysqlOptions =>
                 {
                     mysqlOptions.ServerVersion(new Version(10, 2, 15), ServerType.MariaDb);

@@ -19,6 +19,7 @@ services:
       - DD_AGENT_HOST=datadog
       - MARIADB_USERNAME=root
       - MARIADB_PASSWORD=supersecretpasswordthatnobodywilleverknowsincenobodycanconencttothisdatabasepog
+      - MARIADB_DATABASE=pisstaube
       - ELASTIC_HOSTNAME=elasticsearch
       - ELASTIC_PORT=9200
     env_file:

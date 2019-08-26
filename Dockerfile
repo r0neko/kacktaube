@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core-nightly/sdk:3.0.100-preview6-alpine3.9 AS build-env
+FROM mcr.microsoft.com/dotnet/core-nightly/sdk:3.0.100-preview7-alpine3.9 AS build-env
 
 WORKDIR /pisstaube
 
