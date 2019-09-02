@@ -6,6 +6,7 @@ using osu.Framework.IO.Network;
 using osu.Framework.Logging;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
+using Pisstaube.Engine;
 using StatsdClient;
 
 namespace Pisstaube.Online.Crawler

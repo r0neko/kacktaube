@@ -7,7 +7,7 @@ using osu.Game.Beatmaps;
 using Pisstaube.Database.Models;
 using Pisstaube.Enums;
 
-namespace Pisstaube.Database
+namespace Pisstaube.Engine
 {
     [ElasticsearchType(IdProperty = nameof(Id))]
     public class ElasticBeatmap

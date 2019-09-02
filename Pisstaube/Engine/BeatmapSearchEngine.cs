@@ -6,11 +6,12 @@ using Elasticsearch.Net;
 using Nest;
 using osu.Framework.Logging;
 using osu.Game.Beatmaps;
+using Pisstaube.Database;
 using Pisstaube.Database.Models;
 using Pisstaube.Enums;
 using LogLevel = osu.Framework.Logging.LogLevel;
 
-namespace Pisstaube.Database
+namespace Pisstaube.Engine
 {
     public class BeatmapSearchEngine
     {
@@ -33,6 +34,12 @@ namespace Pisstaube.Database
                 .DefaultIndex("pisstaube");
 
             _elasticClient = new ElasticClient(settings);
+        }
+
+        public bool Ping()
+        {
+            var r = _elasticClient.Ping();
+            return r.IsValid;
         }
         
         private static int xi;

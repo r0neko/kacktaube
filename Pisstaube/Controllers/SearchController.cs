@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using osu.Game.Beatmaps;
 using Pisstaube.Allocation;
 using Pisstaube.Database;
+using Pisstaube.Engine;
 using Pisstaube.Enums;
 using StatsdClient;
 

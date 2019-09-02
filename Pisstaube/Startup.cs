@@ -18,6 +18,7 @@ using osu.Game.Rulesets;
 using Pisstaube.Allocation;
 using Pisstaube.CacheDb;
 using Pisstaube.Database;
+using Pisstaube.Engine;
 using Pisstaube.Online;
 using Pisstaube.Online.Crawler;
 using Pisstaube.Utils;
@@ -134,12 +135,12 @@ namespace Pisstaube
             else
                 app.UseHsts();
 
-            if (searchEngine.Search("test") == null)
+            if (!searchEngine.Ping())
             {
                 Logger.LogPrint("Failed to Connect to ElasticSearch!", LoggingTarget.Network, LogLevel.Error);
                 Environment.Exit(0);
             }
-            
+
             apiv2.Login(Environment.GetEnvironmentVariable("OSU_EMAIL"), Environment.GetEnvironmentVariable("OSU_PASSWORD"));
 
             DogStatsd.Configure(new StatsdConfig { Prefix = "pisstaube" });
