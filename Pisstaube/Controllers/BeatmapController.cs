@@ -27,32 +27,31 @@ namespace Pisstaube.Controllers
             DogStatsd.Increment("beatmap.request");
             
             var raw = Request.Query.ContainsKey("raw");
-            if (raw)
-            {
-                var set = _contextFactory.Get().Beatmaps.Where(bm => bm.BeatmapId == beatmapId).Select(
-                    bm => _contextFactory
-                          .Get().BeatmapSet.FirstOrDefault(s => s.SetId == bm.ParentSetId)
-                ).FirstOrDefault();
-                
-                if (set == null)
-                    return "0";
-                
-                return $"{set.SetId}.osz|" +
-                       $"{set.Artist}|" +
-                       $"{set.Title}|" +
-                       $"{set.Creator}|" +
-                       $"{(int)set.RankedStatus}|" +
-                       "10.00|" +
-                       $"{set.LastUpdate}|" +
-                       $"{set.SetId}|" +
-                       $"{set.SetId}|" +
-                       $"{Convert.ToInt32(set.HasVideo)}|" +
-                       "0|" +
-                       "1234|" +
-                       $"{Convert.ToInt32(set.HasVideo) * 4321}\r\n";
-            }
+            if (!raw)
+                return JsonConvert.SerializeObject(_contextFactory.Get().Beatmaps
+                    .FirstOrDefault(cb => cb.BeatmapId == beatmapId));
             
-            return JsonConvert.SerializeObject(_contextFactory.Get().Beatmaps.FirstOrDefault(cb => cb.BeatmapId == beatmapId));
+            var set = _contextFactory.Get().Beatmaps.Where(bm => bm.BeatmapId == beatmapId).Select(
+                bm => _contextFactory
+                    .Get().BeatmapSet.FirstOrDefault(s => s.SetId == bm.ParentSetId)
+            ).FirstOrDefault();
+                
+            if (set == null)
+                return "0";
+                
+            return $"{set.SetId}.osz|" +
+                   $"{set.Artist}|" +
+                   $"{set.Title}|" +
+                   $"{set.Creator}|" +
+                   $"{(int)set.RankedStatus}|" +
+                   "10.00|" +
+                   $"{set.LastUpdate}|" +
+                   $"{set.SetId}|" +
+                   $"{set.SetId}|" +
+                   $"{Convert.ToInt32(set.HasVideo)}|" +
+                   "0|" +
+                   "1234|" +
+                   $"{Convert.ToInt32(set.HasVideo) * 4321}\r\n";
         }
 
         // GET /api/b/:BeatmapSetId

@@ -46,12 +46,13 @@ namespace Pisstaube.Controllers
         public ActionResult Get()
         {
             var f = _storage.GetStream("pisse.html", FileAccess.ReadWrite);
-                
-            if (f.Length == 0) {
-                f.Write(Encoding.UTF8.GetBytes("Running Pisstaube, a fuck off of cheesegull Written by Mempler available on Github under MIT License!"));
-                f.Flush();
-                f.Position = 0;
-            }
+
+            if (f.Length != 0)
+                return Ok(f);
+            
+            f.Write(Encoding.UTF8.GetBytes("Running Pisstaube, a fuck off of cheesegull Written by Mempler available on Github under MIT License!"));
+            f.Flush();
+            f.Position = 0;
 
             return Ok(f);
         }

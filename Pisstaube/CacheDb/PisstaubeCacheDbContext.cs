@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Pisstaube.CacheDb.Models;
 
@@ -6,8 +7,8 @@ namespace Pisstaube.CacheDb
     public class PisstaubeCacheDbContext : DbContext
     {
         private readonly string _conString;
-        public DbSet<CacheBeatmapSet> CacheBeatmapSet { get; set; }
-        public DbSet<Beatmap> CacheBeatmaps { get; set; }
+        public DbSet<CacheBeatmapSet> CacheBeatmapSet { get; [UsedImplicitly] set; }
+        public DbSet<Beatmap> CacheBeatmaps { get; [UsedImplicitly] set; }
         
         public PisstaubeCacheDbContext(string conString = null)
         {

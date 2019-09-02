@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Elasticsearch.Net;
 using Microsoft.EntityFrameworkCore.Internal;
 using Nest;
-using Newtonsoft.Json;
-using opi.v1;
 using osu.Game.Beatmaps;
 using Pisstaube.Database.Models;
+using Pisstaube.Enums;
 
 namespace Pisstaube.Database
 {

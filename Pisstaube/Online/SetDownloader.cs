@@ -94,23 +94,25 @@ namespace Pisstaube.Online
                     _cleaner.IncreaseSize(new FileInfo(tmpFile).Length);
                     File.Delete(tmpFile);
 
-                    using var db = _cfactory.GetForWrite();
-                    
-                    if ((cachedMap = db.Context.CacheBeatmapSet.FirstOrDefault(cbm => cbm.SetId == set.SetId)) == null)
+                    using (var db = _cfactory.GetForWrite())
                     {
-                        db.Context.CacheBeatmapSet.Add(new CacheBeatmapSet
+                        if ((cachedMap = db.Context.CacheBeatmapSet.FirstOrDefault(cbm => cbm.SetId == set.SetId)) == null)
                         {
-                            SetId = set.SetId,
-                            DownloadCount = 1,
-                            LastDownload = DateTime.Now
-                        });
+                            db.Context.CacheBeatmapSet.Add(new CacheBeatmapSet
+                            {
+                                SetId = set.SetId,
+                                DownloadCount = 1,
+                                LastDownload = DateTime.Now
+                            });
+                        }
+                        else
+                        {
+                            cachedMap.DownloadCount++;
+                            cachedMap.LastDownload = DateTime.Now;
+                            db.Context.CacheBeatmapSet.Update(cachedMap);
+                        }
                     }
-                    else
-                    {
-                        cachedMap.DownloadCount++;
-                        cachedMap.LastDownload = DateTime.Now;
-                        db.Context.CacheBeatmapSet.Update(cachedMap);
-                    }
+                    
                 } catch (ObjectDisposedException)
                 {
                     // Cannot access a closed file.

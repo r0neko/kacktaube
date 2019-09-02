@@ -1,10 +1,9 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
-using opi.v1;
 using osu.Game.Beatmaps;
-using Sora.Helpers;
-using Sora.Interfaces;
+using Pisstaube.Enums;
+using Pisstaube.Utils;
 
 namespace Pisstaube.Database.Models
 {
@@ -81,7 +80,7 @@ namespace Pisstaube.Database.Models
                 Od = info.BaseDifficulty.OverallDifficulty,
                 Cs = info.BaseDifficulty.CircleSize,
                 Hp = info.BaseDifficulty.DrainRate,
-                TotalLength = (int) info.OnlineInfo.Length,
+                TotalLength = info.OnlineInfo.CircleCount + info.OnlineInfo.SliderCount,
                 HitLength = (int) info.StackLeniency,
                 Playcount = info.OnlineInfo.PassCount,
                 Bpm = setOnlineInfo.BPM,

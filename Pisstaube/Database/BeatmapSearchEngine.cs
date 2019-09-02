@@ -4,10 +4,10 @@ using System.Linq;
 using Amib.Threading;
 using Elasticsearch.Net;
 using Nest;
-using opi.v1;
 using osu.Framework.Logging;
 using osu.Game.Beatmaps;
 using Pisstaube.Database.Models;
+using Pisstaube.Enums;
 using LogLevel = osu.Framework.Logging.LogLevel;
 
 namespace Pisstaube.Database
@@ -33,7 +33,6 @@ namespace Pisstaube.Database
                 .DefaultIndex("pisstaube");
 
             _elasticClient = new ElasticClient(settings);
-            _elasticClient.CreateIndex("pisstaube");
         }
         
         private static int xi;

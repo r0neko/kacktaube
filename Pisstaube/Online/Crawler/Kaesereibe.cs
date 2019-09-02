@@ -4,14 +4,11 @@ using System.Linq;
 using System.Threading;
 using osu.Framework.IO.Network;
 using osu.Framework.Logging;
-using osu.Game.Rulesets;
-using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
-using Pisstaube.Online;
 using StatsdClient;
 
-namespace Pisstaube.Utils
+namespace Pisstaube.Online.Crawler
 {
     public class Kaesereibe : ICrawler
     {
@@ -29,14 +26,13 @@ namespace Pisstaube.Utils
         private readonly BeatmapSearchEngine _searchEngine;
         private readonly int _workerThreads;
         private Thread _thread_restarter;
-        private Thread _dd_thread;
 
         public Kaesereibe(PisstaubeDbContextFactory contextFactory, BeatmapSearchEngine searchEngine)
         {
             _pool = new List<Thread>();
             _contextFactory = contextFactory;
             _searchEngine = searchEngine;
-            _workerThreads = int.Parse(Environment.GetEnvironmentVariable("CRAWLER_THREADS"));
+            _workerThreads = int.Parse(Environment.GetEnvironmentVariable("CRAWLER_THREADS") ?? throw new Exception("CRAWLER_THREADS MUST be an Int!"));
         }
 
         public void BeginCrawling()
@@ -45,19 +41,7 @@ namespace Pisstaube.Utils
             _force_stop = false;
             _should_stop = false;
             IsCrawling = true;
-
-            if (_dd_thread != null) {
-                _dd_thread = new Thread(() =>
-                {
-                    while (true)
-                    {
-                        Thread.Sleep(TimeSpan.FromSeconds(30));
-                        DogStatsd.Set("crawler.latest_id", LatestId);
-                    }
-                });
-                _dd_thread.Start();
-            }
-
+            
             while (true)
             {
                 if (_thread_restarter == null)
@@ -135,6 +119,8 @@ namespace Pisstaube.Utils
                 int id;
                 lock (_lock)
                     id = LatestId++;
+                
+                // ReSharper disable once InconsistentlySynchronizedField
                 using (var db = _contextFactory.GetForWrite())
                 {
                     if (!Crawl(id, db.Context))

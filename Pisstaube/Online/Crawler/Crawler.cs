@@ -9,18 +9,16 @@ using osu.Game.Rulesets;
 using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
-using Pisstaube.Online;
-using StatsdClient;
+using Pisstaube.Utils;
 
-namespace Pisstaube.Utils
+namespace Pisstaube.Online.Crawler
 {
     public class Crawler : ICrawler
     {
         private bool _should_stop;
         private bool _force_stop;
         private int _fail_count;
-        private int _request_count;
-        
+
         public int LatestId { get; private set; }
         public bool IsCrawling { get; private set; }
         
@@ -36,7 +34,6 @@ namespace Pisstaube.Utils
         private readonly PisstaubeDbContextFactory _contextFactory;
         private readonly int _workerThreads;
         private Thread _thread_restarter;
-        private Thread _dd_thread;
 
         public Crawler(BeatmapSearchEngine search,
             APIAccess apiAccess,
@@ -54,7 +51,7 @@ namespace Pisstaube.Utils
             _cache = cache;
             _rl = rl;
             _contextFactory = contextFactory;
-            _workerThreads = int.Parse(Environment.GetEnvironmentVariable("CRAWLER_THREADS"));
+            _workerThreads = int.Parse(Environment.GetEnvironmentVariable("CRAWLER_THREADS") ?? throw new Exception("CRAWLER_THREADS MUST be an Int!"));
         }
 
         public void BeginCrawling()
@@ -63,19 +60,7 @@ namespace Pisstaube.Utils
             _force_stop = false;
             _should_stop = false;
             IsCrawling = true;
-
-            if (_dd_thread != null) {
-                _dd_thread = new Thread(() =>
-                {
-                    while (true)
-                    {
-                        Thread.Sleep(TimeSpan.FromSeconds(30));
-                        lock (_lock) DogStatsd.Set("crawler.latest_id", LatestId);
-                    }
-                });
-                _dd_thread.Start();
-            }
-
+            
             while (true)
             {
                 if (_thread_restarter == null)
@@ -86,7 +71,6 @@ namespace Pisstaube.Utils
 
                         while (!_force_stop)
                         {
-                            DogStatsd.ServiceCheck("crawler.is_crawling", Status.OK);
                             for (var i = 0; i < _workerThreads; i++)
                             {
                                 _pool.Add(new Thread(_crawl));
@@ -102,8 +86,7 @@ namespace Pisstaube.Utils
                             
                             if (_force_stop) break;
                             
-                            DogStatsd.ServiceCheck("crawler.is_crawling", Status.CRITICAL);
-                            Logger.LogPrint("Crawler finished! Gonna retry again in 1d", LoggingTarget.Information);
+                            Logger.LogPrint("Crawler finished! Gonna try again in 1d", LoggingTarget.Information);
                             Thread.Sleep(TimeSpan.FromDays(1));
                         }
                     });
@@ -145,8 +128,8 @@ namespace Pisstaube.Utils
         private void _crawl()
         {
             lock (_lock)
-                    if (LatestId == 0)
-                        LatestId = _contextFactory.Get().BeatmapSet.LastOrDefault()?.SetId + 1 ?? 0;
+                if (LatestId == 0)
+                    LatestId = _contextFactory.Get().BeatmapSet.LastOrDefault()?.SetId + 1 ?? 0;
                 
             while (!_should_stop)
             {
@@ -154,6 +137,7 @@ namespace Pisstaube.Utils
                 lock (_lock)
                     id = LatestId++;
                     
+                // ReSharper disable once InconsistentlySynchronizedField
                 using (var db = _contextFactory.GetForWrite()) {
                     if (!Crawl(id, db.Context))
                         _fail_count++;
@@ -161,7 +145,7 @@ namespace Pisstaube.Utils
                         _fail_count = 0;
                 }
 
-                if (_fail_count > 50) // We failed 50 times, lets try tomorrow again! maybe there are new exciting beatmaps!
+                if (_fail_count > 1000) // We failed 1000 times, lets try tomorrow again! maybe there are new exciting beatmaps!
                     _should_stop = true;
             }
         }
@@ -174,17 +158,10 @@ namespace Pisstaube.Utils
                     Thread.Sleep(1000);
 
                 var setRequest = new GetBeatmapSetRequest(id);
-
-                lock (_lock)
-                    _request_count++;
-
+                
                 _rl.Limit();
                 setRequest.Perform(_apiAccess);
                 
-                lock (_lock)
-                    if (_request_count > int.Parse(Environment.GetEnvironmentVariable("CRAWLER_REQUESTS_PER_MINUTE")))
-                        Thread.Sleep(TimeSpan.FromMinutes(1));
-
                 var apiSet = setRequest.Result;
 
                 var localSet = apiSet?.ToBeatmapSet(_store);
@@ -206,11 +183,7 @@ namespace Pisstaube.Utils
                         .FirstOrDefault();
                 }
                 
-                lock (_lock)
-                {
-                    _context.BeatmapSet.Add(dbSet);
-                }
-
+                _context.BeatmapSet.Add(dbSet);
                 _search.IndexBeatmap(dbSet);
             }
             catch (Exception ex)

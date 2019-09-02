@@ -1,6 +1,6 @@
 using Pisstaube.Database;
 
-namespace Pisstaube.Utils
+namespace Pisstaube.Online.Crawler
 {
     public interface ICrawler
     {

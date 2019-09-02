@@ -2,13 +2,41 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
-using opi.v1;
 using osu.Game.Beatmaps;
-using Sora.Helpers;
-using Sora.Interfaces;
+using Pisstaube.Utils;
 
 namespace Pisstaube.Database.Models
 {
+    public enum Genre
+    {
+        Any,
+        Unspecified,
+        Game,
+        Anime,
+        Rock,
+        Pop,
+        Other,
+        Novelty,
+        HipHop = 9,
+        Electronic,
+    }
+    
+    public enum Language
+    {
+        Any,
+        Other,
+        English,
+        Japanese,
+        Chinese,
+        Instrumental,
+        Korean,
+        French,
+        German,
+        Swedish,
+        Spanish,
+        Italian
+    }
+    
     [Serializable]
     public class BeatmapSet : ISerializer
     {
@@ -120,7 +148,7 @@ namespace Pisstaube.Database.Models
 
             foreach (var cb in ChildrenBeatmaps)
                 RetStr += cb.ToDirect();
-            
+
             return RetStr.TrimEnd(',') + "|\r\n";
         }
 

@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
 using osu.Game.Configuration;
@@ -16,11 +15,12 @@ using osu.Game.Database;
 using osu.Game.IO;
 using osu.Game.Online.API;
 using osu.Game.Rulesets;
+using Pisstaube.Allocation;
 using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Online;
+using Pisstaube.Online.Crawler;
 using Pisstaube.Utils;
-using Sora.Allocation;
 using StatsdClient;
 
 namespace Pisstaube
@@ -108,7 +108,7 @@ namespace Pisstaube
                         options.OutputFormatters.RemoveType<HttpNoContentOutputFormatter>();
                         options.EnableEndpointRouting = false;
                     })
-                .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
             services.Configure<FormOptions>(x =>
             {
@@ -120,7 +120,7 @@ namespace Pisstaube
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env,
             Crawler crawler, APIAccess apiv2, Kaesereibe reibe, BeatmapSearchEngine searchEngine, BMUpdater bmUpdater)
         {
             if (Environment.GetEnvironmentVariable("LOG_LEVEL") != null)

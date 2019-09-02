@@ -1,29 +1,32 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp3.0</TargetFramework>
-        <LangVersion>8</LangVersion>
+        <TargetFramework>netcoreapp2.2</TargetFramework>
+        <LangVersion>7.3</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="DogStatsD-CSharp-Client" Version="3.3.0" />
+        <PackageReference Include="dotenv.net" Version="1.0.6" />
+        <PackageReference Include="Elasticsearch.Net" Version="7.2.1" />
+        
         <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
         <PackageReference Include="Microsoft.AspNetCore.HttpsPolicy" Version="2.2.0" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
-        <PackageReference Include="OpenCover" Version="4.7.922" />
-        <PackageReference Include="Sentry" Version="2.0.0-beta3" />
-        <PackageReference Include="Sentry.AspNetCore" Version="2.0.0-beta3" />
+        <PackageReference Include="NEST" Version="7.2.1" />
+        <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="2.2.0" />
+
+        <PackageReference Include="Sentry" Version="1.2.0" />
+        <PackageReference Include="Sentry.AspNetCore" Version="1.2.0" />
+        <PackageReference Include="SmartThreadPool.NetCore" Version="2.3.0" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Pisstaube.CacheDb\Pisstaube.CacheDb.csproj" />
-      <ProjectReference Include="..\Pisstaube.Database\Pisstaube.Database.csproj" />
-      <ProjectReference Include="..\Sora\osu\osu.Game.Rulesets.Catch\osu.Game.Rulesets.Catch.csproj" />
-      <ProjectReference Include="..\Sora\osu\osu.Game.Rulesets.Mania\osu.Game.Rulesets.Mania.csproj" />
-      <ProjectReference Include="..\Sora\osu\osu.Game.Rulesets.Osu\osu.Game.Rulesets.Osu.csproj" />
-      <ProjectReference Include="..\Sora\osu\osu.Game.Rulesets.Taiko\osu.Game.Rulesets.Taiko.csproj" />
-      <ProjectReference Include="..\Sora\osu\osu.Game\osu.Game.csproj" />
-      <ProjectReference Include="..\Sora\Sora\Sora.csproj" />
+      <ProjectReference Include="..\osu\osu.Game.Rulesets.Catch\osu.Game.Rulesets.Catch.csproj" />
+      <ProjectReference Include="..\osu\osu.Game.Rulesets.Mania\osu.Game.Rulesets.Mania.csproj" />
+      <ProjectReference Include="..\osu\osu.Game.Rulesets.Osu\osu.Game.Rulesets.Osu.csproj" />
+      <ProjectReference Include="..\osu\osu.Game.Rulesets.Taiko\osu.Game.Rulesets.Taiko.csproj" />
+      <ProjectReference Include="..\osu\osu.Game\osu.Game.csproj" />
     </ItemGroup>
 
 </Project>

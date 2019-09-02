@@ -94,42 +94,41 @@ namespace Pisstaube.Online
                     var setInfo = setRequest.Result.ToBeatmapSet(_store);
                     var newBm = BeatmapSet.FromBeatmapSetInfo(setInfo);
 
-                    using var db = _factory.GetForWrite();
-                    
-                    var hasChanged = false;
-                    foreach (var cb in newBm.ChildrenBeatmaps)
+                    using (var db = _factory.GetForWrite())
                     {
-                        var fInfo = _bmDl.Download(cb);
-                        var ha = _cFactory.Get().CacheBeatmaps.Where(b => b.Hash == fInfo.Hash).Select(f => f.FileMd5).FirstOrDefault();
-                        cb.FileMd5 = ha;
+                        var hasChanged = false;
+                        foreach (var cb in newBm.ChildrenBeatmaps)
+                        {
+                            var fInfo = _bmDl.Download(cb);
+                            var ha = _cFactory.Get().CacheBeatmaps.Where(b => b.Hash == fInfo.Hash).Select(f => f.FileMd5).FirstOrDefault();
+                            cb.FileMd5 = ha;
                         
-                        db.Context.Entry(cb).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-                        db.Context.Beatmaps.Update(cb);
+                            db.Context.Entry(cb).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+                            db.Context.Beatmaps.Update(cb);
                         
-                        if (bmSet.ChildrenBeatmaps.Any(x => x.FileMd5 == ha))
-                            continue;
-                        
-                       
+                            if (bmSet.ChildrenBeatmaps.Any(x => x.FileMd5 == ha))
+                                continue;
 
-                        hasChanged = true;
-                    }
+                            hasChanged = true;
+                        }
 
-                    if (newBm.ChildrenBeatmaps.Count > bmSet.ChildrenBeatmaps.Count)
-                        hasChanged = true;
+                        if (newBm.ChildrenBeatmaps.Count > bmSet.ChildrenBeatmaps.Count)
+                            hasChanged = true;
 
-                    var bmFileId = newBm.SetId.ToString("x8");
-                    var bmFileIdNoVid = newBm.SetId.ToString("x8") + "_novid";
+                        var bmFileId = newBm.SetId.ToString("x8");
+                        var bmFileIdNoVid = newBm.SetId.ToString("x8") + "_novid";
                     
-                    if (hasChanged) {
-                        _storage.GetStorageForDirectory("cache").Delete(bmFileId);
-                        _storage.GetStorageForDirectory("cache").Delete(bmFileIdNoVid);
+                        if (hasChanged) {
+                            _storage.GetStorageForDirectory("cache").Delete(bmFileId);
+                            _storage.GetStorageForDirectory("cache").Delete(bmFileIdNoVid);
                         
-                        _search.DeleteBeatmap(newBm.SetId);
-                        _search.IndexBeatmap(newBm);
-                    }
+                            _search.DeleteBeatmap(newBm.SetId);
+                            _search.IndexBeatmap(newBm);
+                        }
                     
-                    db.Context.Entry(newBm).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-                    db.Context.BeatmapSet.Update(newBm);
+                        db.Context.Entry(newBm).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+                        db.Context.BeatmapSet.Update(newBm);
+                    }
                     
                     FileSafety.DeleteCleanupDirectory();
                 }

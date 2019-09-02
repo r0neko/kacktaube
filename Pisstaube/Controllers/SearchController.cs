@@ -1,10 +1,10 @@
 using System;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using opi.v1;
 using osu.Game.Beatmaps;
+using Pisstaube.Allocation;
 using Pisstaube.Database;
-using Sora.Allocation;
+using Pisstaube.Enums;
 using StatsdClient;
 
 namespace Pisstaube.Controllers
@@ -34,9 +34,8 @@ namespace Pisstaube.Controllers
         {
             var raw = Request.Query.ContainsKey("raw");
             var ha = query + amount + offset + status + mode;
-
-            string ca;
-            if ((ca = _cache.Get<string>(ha)) != null)
+            
+            if (_cache.TryGet(ha, out string ca))
                 return ca;
             
             var result = _searchEngine.Search(query, amount, offset, status, mode);

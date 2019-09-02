@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading;
 using dotenv.net;
 using Microsoft.AspNetCore;
@@ -15,7 +16,17 @@ namespace Pisstaube
         public static void Main(string[] args)
         {
             Console.CancelKeyPress += OnProcessExit;
+            if (!File.Exists(".env"))
+            {
+                if (File.Exists(".env"))
+                    goto SKIP; // Assume this is a docker environment!
+                    
+                File.Copy(".env.example", ".env");
+                Console.WriteLine("Config has been created! please edit");
+                return;
+            }
             DotEnv.Config();
+            SKIP:
             CreateWebHostBuilder(args).Build().RunAsync(cts.Token).GetAwaiter().GetResult();
         }
 
