@@ -34,7 +34,7 @@ namespace Pisstaube.Controllers
         )
         {
             var raw = Request.Query.ContainsKey("raw");
-            var ha = query + amount + offset + status + mode;
+            var ha = query + amount + offset + status + mode + raw;
             
             if (_cache.TryGet(ha, out string ca))
                 return ca;

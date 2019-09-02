@@ -169,11 +169,12 @@ namespace Pisstaube.Engine
             }
             else
             {
-                var sSets = _contextFactory.Get().BeatmapSet
+                var ctx = _contextFactory.Get();
+                var sSets = ctx.BeatmapSet
                                            .Where(
                                                set => (
                                                       rankedStatus == null || set.RankedStatus == rankedStatus) &&
-                                                      _contextFactory.Get().Beatmaps.Where(
+                                                      ctx.Beatmaps.Where(
                                                                          cb => cb.ParentSetId == set.SetId
                                                                      )
                                                                      .FirstOrDefault(
@@ -187,7 +188,7 @@ namespace Pisstaube.Engine
                 foreach (var s in sSets)
                 {
                     if (s.ChildrenBeatmaps == null)
-                        s.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(cb => cb.ParentSetId == s.SetId).ToList();
+                        s.ChildrenBeatmaps = ctx.Beatmaps.Where(cb => cb.ParentSetId == s.SetId).ToList();
                 }
 
                 sets = sSets.ToList();
