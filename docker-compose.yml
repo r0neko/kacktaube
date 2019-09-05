@@ -24,7 +24,7 @@ services:
       - ELASTIC_PORT=9200
     env_file:
       - docker.env
-    restart: on-failure
+    restart: always
     ports:
       - 62011:80
 
