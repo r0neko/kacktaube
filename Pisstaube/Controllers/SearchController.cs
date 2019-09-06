@@ -24,7 +24,7 @@ namespace Pisstaube.Controllers
             _cache = cache;
         }
 
-        private bool GetTryFromQuery<T>(IEnumerable<string> keys, out T val)
+        private bool GetTryFromQuery<T>(IEnumerable<string> keys, T def, out T val)
         {
             var rString = string.Empty;
             
@@ -38,14 +38,14 @@ namespace Pisstaube.Controllers
 
             if (rString == null)
             {
-                val = default;
+                val = def;
                 return false;
             }
 
             var converter = TypeDescriptor.GetConverter(typeof(T));
             if (!converter.IsValid(rString))
             {
-                val = default;
+                val = def;
                 return false;
             }
             
@@ -82,13 +82,13 @@ namespace Pisstaube.Controllers
         {
             var raw = Request.Query.ContainsKey("raw");
             
-            GetTryFromQuery(new[] {"query",   "q"}, out string query);
-            GetTryFromQuery(new[] {"amount",  "a"}, out int amount);
-            GetTryFromQuery(new[] {"offset",  "o"}, out int offset);
-            GetTryFromQuery(new[] {"page",    "p"}, out int page);
-            GetTryFromQuery(new[] {"mode",    "m"}, out PlayMode mode);
-            GetTryFromQuery(new[] {"status",  "r"}, out int? r);
-            GetTryFromQuery(new[] {"ruri",    "ru"}, out bool ruri);
+            GetTryFromQuery(new[] {"query",   "q"}, string.Empty, out var query);
+            GetTryFromQuery(new[] {"amount",  "a"}, 100, out var amount);
+            GetTryFromQuery(new[] {"offset",  "o"}, 0, out var offset);
+            GetTryFromQuery(new[] {"page",    "p"}, 0, out var page);
+            GetTryFromQuery(new[] {"mode",    "m"}, PlayMode.All,out var mode);
+            GetTryFromQuery(new[] {"status",  "r"}, null, out int? r);
+            GetTryFromQuery(new[] {"ruri",    "ru"}, false, out var ruri);
 
             BeatmapSetOnlineStatus? status = null;
             if (r != null && ruri)
@@ -98,9 +98,9 @@ namespace Pisstaube.Controllers
 
             offset += 100 * page;
             
-            if (query.ToLower().Equals("newest") ||
-                query.ToLower().Equals("top rated") ||
-                query.ToLower().Equals("most played"))
+            if (query.ToLower().Equals("newest") || 
+                query.ToLower().Equals("top rated") || // TODO: Implementing this
+                query.ToLower().Equals("most played")) // and this
                 query = "";
 
             var ha = query + amount + offset + status + mode + page + raw;

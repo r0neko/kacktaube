@@ -1,5 +1,8 @@
+using System.ComponentModel;
+
 namespace Pisstaube.Enums
 {
+    [DefaultValue(All)]
     public enum PlayMode
     {
         All = -1,
