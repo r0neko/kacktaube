@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using osu.Framework.IO.File;
 using osu.Framework.Logging;
@@ -25,6 +26,7 @@ namespace Pisstaube.Online
         private readonly RulesetStore _store;
         private readonly Storage _storage;
         private readonly BeatmapSearchEngine _search;
+        private readonly Crawler.Crawler crawler;
         private RequestLimiter _rl;
         
         public BMUpdater(PisstaubeDbContextFactory factory,
@@ -34,6 +36,7 @@ namespace Pisstaube.Online
             RulesetStore store,
             Storage storage,
             BeatmapSearchEngine search,
+            Crawler.Crawler crawler,
             
             int limit = 100 /* 100 beatmaps can be updated at the same time per minute! */)
         {
@@ -44,6 +47,7 @@ namespace Pisstaube.Online
             _store = store;
             _storage = storage;
             _search = search;
+            this.crawler = crawler;
             _rl = new RequestLimiter(limit, TimeSpan.FromMinutes(1));
         }
 
@@ -53,6 +57,12 @@ namespace Pisstaube.Online
         {
             while (true)
             {
+                if (crawler.IsCrawling) // Preventing a random crash while crawling!
+                {
+                    Thread.Sleep(1000); 
+                    continue;
+                }
+                
                 var beatmapSets = _factory.Get().BeatmapSet.Where(x => !x.Disabled)
                                           .Where(
                                               x => x.LastChecked != null && ((
