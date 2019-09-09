@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using osu.Framework.Logging;
 using osu.Game.Beatmaps;
 using Pisstaube.Allocation;
 using Pisstaube.Engine;
@@ -50,6 +51,7 @@ namespace Pisstaube.Controllers
             }
             
             val = (T) converter.ConvertFromString(rString);
+            Logger.LogPrint($"V: {val}");
             return true;
         }
 
@@ -86,7 +88,7 @@ namespace Pisstaube.Controllers
             GetTryFromQuery(new[] {"amount",  "a"}, 100, out var amount);
             GetTryFromQuery(new[] {"offset",  "o"}, 0, out var offset);
             GetTryFromQuery(new[] {"page",    "p"}, 0, out var page);
-            GetTryFromQuery(new[] {"mode",    "m"}, PlayMode.All,out var mode);
+            GetTryFromQuery(new[] {"mode",    "m"}, 0,out var mode);
             GetTryFromQuery(new[] {"status",  "r"}, null, out int? r);
             GetTryFromQuery(new[] {"ruri",    "ru"}, false, out var ruri);
 
@@ -108,7 +110,7 @@ namespace Pisstaube.Controllers
             if (_cache.TryGet(ha, out string ca))
                 return ca;
             
-            var result = _searchEngine.Search(query, amount, offset, status, mode);
+            var result = _searchEngine.Search(query, amount, offset, status, (PlayMode) mode);
             
             DogStatsd.Increment("beatmap.searches");
             

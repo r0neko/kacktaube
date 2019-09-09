@@ -115,18 +115,27 @@ namespace Pisstaube.Controllers
 
                     for (var i = 0; i < count; i++)
                     {
-                        var set = sr.ReadData<BeatmapSet>();
-                        
-                        Logger.LogPrint($"Importing BeatmapSet {set.SetId} {set.Artist} - {set.Title} ({set.Creator}) of Index {i}", LoggingTarget.Database, LogLevel.Important);
+                        try
+                        {
+                            var set = sr.ReadData<BeatmapSet>();
 
-                        if (!drop)
-                            if (db.Context.BeatmapSet.Any(s => s.SetId == set.SetId))
-                                db.Context.BeatmapSet.Update(set);
+                            Logger.LogPrint(
+                                $"Importing BeatmapSet {set.SetId} {set.Artist} - {set.Title} ({set.Creator}) of Index {i}",
+                                LoggingTarget.Database, LogLevel.Important);
+
+                            if (!drop)
+                                if (db.Context.BeatmapSet.Any(s => s.SetId == set.SetId))
+                                    db.Context.BeatmapSet.Update(set);
+                                else
+                                    db.Context.BeatmapSet.Add(set);
                             else
                                 db.Context.BeatmapSet.Add(set);
-                        else
-                            db.Context.BeatmapSet.Add(set);
-                       
+
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error(ex, "Unknown error!");
+                        }
                     }
                     Logger.LogPrint("Finish importing maps!");
                 }

@@ -111,16 +111,27 @@ namespace Pisstaube.Engine
                     var ret = s
                         .From(offset)
                         .Size(amount)
-                        .MinScore(10)
+                        .MinScore(5)
                         .Query(q =>
                             q.Bool(b => b
                                     .Must(must =>
                                         {
                                             QueryContainer res = must;
-                                            if (rankedStatus != null)
-                                                res = must.Term(term => term.Field(p => p.RankedStatus)
-                                                    .Value(rankedStatus));
                                             
+                                            if (rankedStatus != null) {
+                                                if (rankedStatus == BeatmapSetOnlineStatus.Ranked ||
+                                                    rankedStatus == BeatmapSetOnlineStatus.Approved)
+                                                {
+                                                    res = must.Term(term => term.Field(p => p.RankedStatus)
+                                                        .Value(BeatmapSetOnlineStatus.Approved));
+                                                    res |= must.Term(term => term.Field(p => p.RankedStatus)
+                                                        .Value(BeatmapSetOnlineStatus.Ranked));
+                                                }
+                                                else
+                                                    res = must.Term(term => term.Field(p => p.RankedStatus)
+                                                        .Value(rankedStatus));
+                                            }
+
                                             if (mode != PlayMode.All)
                                                 res &= must.Term(term => term.Field(p => p.Mode)
                                                     .Value(mode));
@@ -129,11 +140,11 @@ namespace Pisstaube.Engine
                                         }
                                     )
                                     .Should(should =>
-                                        should.Match(match => match.Field(p => p.Creator).Query(query).Boost(5)) ||
-                                        should.Match(match => match.Field(p => p.Artist).Query(query)) ||
-                                        should.Match(match => match.Field(p => p.DiffName).Query(query)) ||
-                                        should.Match(match => match.Field(p => p.Tags).Query(query)) ||
-                                        should.Match(match => match.Field(p => p.Title).Query(query).Boost(2))
+                                        should.Match(match => match.Field(p => p.Creator).Query(query).Boost(2)) ||
+                                        should.Match(match => match.Field(p => p.Artist).Query(query).Boost(3)) ||
+                                        should.Match(match => match.Field(p => p.DiffName).Query(query).Boost(.9)) ||
+                                        should.Match(match => match.Field(p => p.Tags).Query(query).Boost(.9)) ||
+                                        should.Match(match => match.Field(p => p.Title).Query(query).Boost(3))
                                     )
                             )
                         );
@@ -148,6 +159,7 @@ namespace Pisstaube.Engine
                     return null;
                 }
                 
+
                 var r = result.Hits.Select(
                     hit => hit != null ? _contextFactory.Get().BeatmapSet.FirstOrDefault(set => set.SetId == hit.Source.Id) : null
                 );
@@ -155,11 +167,8 @@ namespace Pisstaube.Engine
 
                 var newSets = new List<BeatmapSet>();
                 
-                foreach (var s in sets)
+                foreach (var s in sets.Where(s => s != null))
                 {
-                    if (s == null)
-                        continue;
-                    
                     newSets.Add(s);
                     if (s.ChildrenBeatmaps == null)
                         s.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(cb => cb.ParentSetId == s.SetId).ToList();
@@ -173,7 +182,8 @@ namespace Pisstaube.Engine
                 var sSets = ctx.BeatmapSet
                                            .Where(
                                                set => (
-                                                      rankedStatus == null || set.RankedStatus == rankedStatus) &&
+                                                        rankedStatus == null || set.RankedStatus == rankedStatus
+                                                      ) &&
                                                       ctx.Beatmaps.Where(
                                                                          cb => cb.ParentSetId == set.SetId
                                                                      )
