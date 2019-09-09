@@ -255,8 +255,8 @@ namespace Pisstaube.Controllers
                 case RecoveryAction.RepairPlayModes:
                     _crawler.Stop();
                     
+                    _searchEngine.DeleteAllBeatmaps();
                     using (var db = _contextFactory.GetForWrite()) {
-
                         foreach (var bm in db.Context.Beatmaps)
                         {
                             var cbm = _cache.Get().CacheBeatmaps.FirstOrDefault(b => b.FileMd5 == bm.FileMd5);
@@ -276,6 +276,8 @@ namespace Pisstaube.Controllers
 
                                 bm.Mode = (PlayMode) osubm.BeatmapInfo.RulesetID;
                             }
+                            
+                            _searchEngine.IndexBeatmap(db.Context.BeatmapSet.First(set => set.SetId == bm.ParentSetId));
                         }
                     }
                     
