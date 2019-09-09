@@ -266,6 +266,9 @@ namespace Pisstaube.Controllers
                             var file = _store.QueryFiles(f => f.Hash == cbm.Hash).FirstOrDefault();
                             if (file != null)
                             {
+                                if (!System.IO.File.Exists(file.StoragePath))
+                                    continue;
+                                
                                 Beatmap osubm;
                                 using (var stream = System.IO.File.OpenRead(file.StoragePath))
                                 using (var streamReader = new StreamReader(stream))
