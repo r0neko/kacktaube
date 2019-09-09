@@ -6,10 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
+using osu.Game.Beatmaps;
+using osu.Game.Beatmaps.Formats;
+using osu.Game.IO;
 using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
 using Pisstaube.Engine;
+using Pisstaube.Enums;
 using Pisstaube.Online.Crawler;
 using Pisstaube.Utils;
 using Logger = osu.Framework.Logging.Logger;
@@ -20,7 +24,8 @@ namespace Pisstaube.Controllers
     {
         RepairElastic,
         RecrawlEverything,
-        RecrawlUnknown
+        RecrawlUnknown,
+        RepairPlayModes
     }
     
     [Route("api/pisstaube")] 
@@ -34,12 +39,13 @@ namespace Pisstaube.Controllers
         private readonly Cleaner _cleaner;
         private readonly PisstaubeCacheDbContextFactory _cache;
         private readonly Kaesereibe _reibe;
+        private readonly FileStore _store;
 
         private static readonly object _lock = new object();
 
         public PrivateAPIController(PisstaubeDbContextFactory contextFactory,
             Storage storage, BeatmapSearchEngine searchEngine, Crawler crawler, Cleaner cleaner,
-            PisstaubeCacheDbContextFactory cache, Kaesereibe reibe)
+            PisstaubeCacheDbContextFactory cache, Kaesereibe reibe, FileStore store)
         {
             _contextFactory = contextFactory;
             _storage = storage;
@@ -48,6 +54,7 @@ namespace Pisstaube.Controllers
             _cleaner = cleaner;
             _cache = cache;
             _reibe = reibe;
+            _store = store;
         }
         
         // GET /api/pisstaube/dump?key={KEY}
@@ -243,6 +250,40 @@ namespace Pisstaube.Controllers
                         }
                     }
                     _crawler.BeginCrawling();
+                    break;
+                
+                case RecoveryAction.RepairPlayModes:
+                    _crawler.Stop();
+                    
+                    using (var db = _contextFactory.GetForWrite()) {
+
+                        foreach (var bm in db.Context.Beatmaps)
+                        {
+                            var cbm = _cache.Get().CacheBeatmaps.FirstOrDefault(b => b.FileMd5 == bm.FileMd5);
+                            if (cbm == null)
+                                continue;
+                            
+                            var file = _store.QueryFiles(f => f.Hash == cbm.Hash).FirstOrDefault();
+                            if (file != null)
+                            {
+                                Beatmap osubm;
+                                using (var stream = System.IO.File.OpenRead(file.StoragePath))
+                                using (var streamReader = new StreamReader(stream))
+                                    osubm = Decoder.GetDecoder<Beatmap>(streamReader).Decode(streamReader);
+
+                                if (osubm == null)
+                                    continue;
+
+                                bm.Mode = (PlayMode) osubm.BeatmapInfo.RulesetID;
+                            }
+                        }
+                    }
+                    
+                    if (Environment.GetEnvironmentVariable("CRAWLER_DISABLED") != "true")
+                        _crawler.BeginCrawling();
+                    
+                    if (Environment.GetEnvironmentVariable("CHEESEGULL_CRAWLER_DISABLED") != "true")
+                        _reibe.BeginCrawling();
                     break;
                 default:
                     return BadRequest("Unknown Action type!");
