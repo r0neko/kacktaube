@@ -191,6 +191,8 @@ namespace Pisstaube.Controllers
             if (key != Environment.GetEnvironmentVariable("PRIVATE_API_KEY"))
                 return Unauthorized("Key is wrong!");
 
+            GlobalConfig.EnableSearch = false;
+
             switch (action)
             {
                 case RecoveryAction.RepairElastic:
@@ -293,6 +295,8 @@ namespace Pisstaube.Controllers
                 default:
                     return BadRequest("Unknown Action type!");
             }
+
+            GlobalConfig.EnableSearch = true;
 
             return Ok("Success!");
         }

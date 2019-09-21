@@ -59,6 +59,9 @@ namespace Pisstaube.Controllers
         [HttpGet]
         public ActionResult<string> Get()
         {
+            if (!GlobalConfig.EnableSearch)
+                return Unauthorized("Searches are currently Disabled!");
+            
             var raw = Request.Query.ContainsKey("raw");
             
             GetTryFromQuery(new[] {"query",   "q"}, string.Empty, out var query);

@@ -23,7 +23,7 @@ namespace Pisstaube.Engine
         {
             _contextFactory = contextFactory;
             _pool = new SmartThreadPool();
-            _pool.MaxThreads = Environment.ProcessorCount * 16;
+            _pool.MaxThreads = Environment.ProcessorCount * 4;
             _pool.Start();
 
             var settings = new ConnectionSettings(
