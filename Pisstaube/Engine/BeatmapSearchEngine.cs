@@ -43,9 +43,9 @@ namespace Pisstaube.Engine
         }
         
         private static int xi;
-        private void rIndexBeatmap(BeatmapSet set)
+        public void rIndexBeatmap(BeatmapSet set)
         {
-            if (xi++ % 10000 == 0)
+            //if (xi++ % 10000 == 0)
                 Logger.LogPrint($"Index ElasticBeatmap of Id {set.SetId}");
                     
             _elasticClient.DeleteByQuery<ElasticBeatmap>(

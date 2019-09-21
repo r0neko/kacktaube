@@ -202,10 +202,10 @@ namespace Pisstaube.Controllers
 
                     _searchEngine.DeleteAllBeatmaps();
                     
-                    foreach (var beatmapSet in _contextFactory.Get().BeatmapSet)
+                    foreach (var beatmapSet in _contextFactory.Get().BeatmapSet.ToList()) // RIP Ram but it's worth it!'
                     {
                         beatmapSet.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(b => b.ParentSetId == beatmapSet.SetId).ToList();
-                        _searchEngine.IndexBeatmap(beatmapSet);
+                        _searchEngine.rIndexBeatmap(beatmapSet);
                     }
                     
                     if (Environment.GetEnvironmentVariable("CRAWLER_DISABLED") != "true")
