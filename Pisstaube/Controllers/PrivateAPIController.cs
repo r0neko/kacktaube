@@ -177,7 +177,7 @@ namespace Pisstaube.Controllers
                 LatestCrawledId = _crawler.IsCrawling ? _crawler.LatestId : cInt,
                 MaxStorage = _cleaner.MaxSize,
                 StorageUsed = (ulong) _cleaner.DataDirectorySize,
-                StorageUsagePercent = MathF.Round ((ulong)_cleaner.DataDirectorySize / _cleaner.MaxSize * 100, 2)
+                StorageUsagePercent = (((ulong)_cleaner.DataDirectorySize) / _cleaner.MaxSize) * 100
             });
         }
 

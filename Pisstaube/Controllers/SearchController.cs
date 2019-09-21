@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using osu.Framework.Logging;
@@ -32,12 +33,12 @@ namespace Pisstaube.Controllers
             foreach (var k in keys)
             {
                 if (!Request.Query.ContainsKey(k)) continue;
-                
+
                 Request.Query.TryGetValue(k, out var x);
-                rString += x;
+                rString += x.FirstOrDefault();
             }
 
-            if (rString == null)
+            if (string.IsNullOrEmpty(rString))
             {
                 val = def;
                 return false;
@@ -51,31 +52,7 @@ namespace Pisstaube.Controllers
             }
             
             val = (T) converter.ConvertFromString(rString);
-            Logger.LogPrint($"V: {val}");
             return true;
-        }
-
-        private int RuriStatus(int status)
-        {
-            switch (status)
-            {
-                case 0:
-                    return 1;
-                case 2:
-                    return 0;
-                case 3:
-                    return 3;
-                case 4:
-                    return -100;
-                case 5:
-                    return -2;
-                case 7:
-                    return 2;
-                case 8:
-                    return 4;
-                default:
-                    return 1;
-            }
         }
         
         // GET /api/search
@@ -93,9 +70,7 @@ namespace Pisstaube.Controllers
             GetTryFromQuery(new[] {"ruri",    "ru"}, false, out var ruri);
 
             BeatmapSetOnlineStatus? status = null;
-            if (r != null && ruri)
-                status = (BeatmapSetOnlineStatus) RuriStatus(r.Value);
-            else if (r != null)
+            if (r != null)
                 status = (BeatmapSetOnlineStatus) r.Value;
 
             offset += 100 * page;
