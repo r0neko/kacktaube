@@ -85,7 +85,7 @@ namespace Pisstaube
             
             services
                 .AddSingleton<Cache>()
-                .AddSingleton<BMUpdater>()
+                .AddSingleton<BeatmapUpdater>()
                 .AddSingleton<PisstaubeDbContext>()
                 .AddSingleton<BeatmapSearchEngine>()
                 .AddSingleton<Storage>(dataStorage)
@@ -122,7 +122,7 @@ namespace Pisstaube
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env,
-            Crawler crawler, APIAccess apiv2, Kaesereibe reibe, BeatmapSearchEngine searchEngine, BMUpdater bmUpdater)
+            Crawler crawler, APIAccess apiv2, Kaesereibe reibe, BeatmapSearchEngine searchEngine, BeatmapUpdater beatmapUpdater)
         {
             if (Environment.GetEnvironmentVariable("LOG_LEVEL") != null)
                 if (Enum.TryParse(Environment.GetEnvironmentVariable("LOG_LEVEL"), out LogLevel level))
@@ -166,7 +166,7 @@ namespace Pisstaube
             DogStatsd.ServiceCheck("is_active", Status.OK);
             
             if (Environment.GetEnvironmentVariable("UPDATER_DISABLED") != "true")
-                bmUpdater.BeginUpdaterAsync();
+                beatmapUpdater.BeginUpdaterAsync();
 
             app.UseMvc(routes => routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}"));
         }

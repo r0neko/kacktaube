@@ -17,7 +17,7 @@ using Pisstaube.Utils;
 
 namespace Pisstaube.Online
 {
-    public class BMUpdater
+    public class BeatmapUpdater
     {
         private readonly PisstaubeDbContextFactory _factory;
         private readonly APIAccess _apiAccess;
@@ -29,7 +29,7 @@ namespace Pisstaube.Online
         private readonly Crawler.Crawler crawler;
         private RequestLimiter _rl;
         
-        public BMUpdater(PisstaubeDbContextFactory factory,
+        public BeatmapUpdater(PisstaubeDbContextFactory factory,
             APIAccess apiAccess,
             BeatmapDownloader bmDl,
             PisstaubeCacheDbContextFactory cFactory,
@@ -150,7 +150,7 @@ namespace Pisstaube.Online
                     }
                     catch (Exception ex)
                     {
-                        Logger.Error(ex, "Unknown Erro while updating!");
+                        Logger.Error(ex, "Unknown Error while updating!");
                     }
                 }
             }
