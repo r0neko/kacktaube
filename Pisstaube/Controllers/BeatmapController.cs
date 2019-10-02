@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
@@ -15,7 +17,10 @@ namespace Pisstaube.Controllers
     {
         private readonly PisstaubeDbContextFactory _contextFactory;
 
-        public BeatmapController(PisstaubeDbContextFactory contextFactory) => _contextFactory = contextFactory;
+        public BeatmapController(PisstaubeDbContextFactory contextFactory)
+        {
+            _contextFactory = contextFactory;
+        }
 
         [HttpGet]
         public ActionResult<List<BeatmapSet>> Get() => null;
@@ -87,6 +92,45 @@ namespace Pisstaube.Controllers
 
             set.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(cb => cb.ParentSetId == set.SetId).ToList();
             return JsonConvert.SerializeObject(set);
+        }
+        
+        // GET /api/f/:Beatmap File Name
+        [HttpGet("f/{bmfileName}")]
+        public async Task<ActionResult<string>> GetBeatmapSetByFile(string bmFileName)
+        {
+            var array = Request.Query.ContainsKey("array");
+            
+            var names = new List<string>();
+            if (array)
+                names.AddRange(bmFileName.Split(','));
+            else
+                names.Add(bmFileName);
+            
+            // TODO: Add Cache as this is slow.
+            var bms = from b in _contextFactory.Get().Beatmaps
+                join p in _contextFactory.Get().BeatmapSet on b.ParentSetId equals p.SetId
+                where
+                    (names.Any(s => s == $"{p.Artist} - {p.Title} ({p.Creator}) [{b.DiffName}].osu") ||
+                    names.Any(s => s == $"{p.Artist} - {p.Title} ({p.Creator}).osu"))
+                select p;
+
+            if (!array) {
+                var bm = await bms.FirstOrDefaultAsync();
+                if (bm == null) return null;
+                
+                bm.ChildrenBeatmaps = await _contextFactory.Get().Beatmaps.Where(c => c.ParentSetId == bm.SetId).ToListAsync();
+                
+                return JsonConvert.SerializeObject(bm);
+            }
+
+            var l = await bms.ToListAsync();
+
+            foreach (var b in l)
+            {
+                b.ChildrenBeatmaps = await _contextFactory.Get().Beatmaps.Where(c => c.ParentSetId == b.SetId).ToListAsync();
+            }
+            
+            return JsonConvert.SerializeObject(bms);
         }
     }
 }

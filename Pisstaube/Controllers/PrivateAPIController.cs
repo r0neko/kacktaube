@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using osu.Framework.Logging;
@@ -183,7 +184,7 @@ namespace Pisstaube.Controllers
 
 
         [HttpGet("recovery")]
-        public ActionResult Recovery(
+        public async Task<ActionResult> Recovery(
             [FromQuery] string key,
             [FromQuery] RecoveryAction action
             )
@@ -201,12 +202,13 @@ namespace Pisstaube.Controllers
                     _reibe.Stop();
 
                     _searchEngine.DeleteAllBeatmaps();
-                    
-                    foreach (var beatmapSet in _contextFactory.Get().BeatmapSet.ToList()) // RIP Ram but it's worth it!'
+
+                    var bms = await _contextFactory.Get().BeatmapSet.ToListAsync();
+                    foreach (var beatmapSet in bms)
                     {
-                        beatmapSet.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(b => b.ParentSetId == beatmapSet.SetId).ToList();
-                        _searchEngine.rIndexBeatmap(beatmapSet);
+                        beatmapSet.ChildrenBeatmaps = await _contextFactory.Get().Beatmaps.Where(b => b.ParentSetId == beatmapSet.SetId).ToListAsync();
                     }
+                    _searchEngine.rIndexBeatmap(bms, true);
                     
                     if (Environment.GetEnvironmentVariable("CRAWLER_DISABLED") != "true")
                         _crawler.BeginCrawling();

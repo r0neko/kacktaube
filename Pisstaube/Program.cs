@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.IO;
+using System.Net;
 using System.Threading;
 using dotenv.net;
 using Microsoft.AspNetCore;
@@ -33,7 +34,10 @@ namespace Pisstaube
         private static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseSentry(Environment.GetEnvironmentVariable("SENTRY_DNS"))
-                .UseKestrel(opt => opt.Limits.MaxRequestBodySize = null)
+                .UseKestrel(opt =>
+                {
+                    opt.Limits.MaxRequestBodySize = null;
+                })
                 .UseShutdownTimeout(TimeSpan.FromSeconds(5))
                 .UseStartup<Startup>();
         

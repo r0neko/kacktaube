@@ -148,6 +148,8 @@ namespace Pisstaube.Online.Crawler
 
                 if (_fail_count > 1000) // We failed 1000 times, lets try tomorrow again! maybe there are new exciting beatmaps!
                     _should_stop = true;
+
+                IsCrawling = !_should_stop;
             }
         }
 

@@ -60,6 +60,24 @@ namespace Pisstaube.Engine
             if (!result.IsValid)
                 Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
         }
+        
+        public void rIndexBeatmap(IEnumerable<BeatmapSet> sets, bool skipDeleting = false)
+        {
+            var elasticBeatmaps = sets.Select(set => ElasticBeatmap.GetElasticBeatmap(set)).ToList();
+            if (!skipDeleting)
+                foreach (var bm in elasticBeatmaps)
+                {
+                    _elasticClient.DeleteByQuery<ElasticBeatmap>(
+                        x =>
+                            x.Query(query => query.Exists(exists => exists.Field(field => field.Id == bm.Id)))
+                    );
+                }
+            
+            var result = _elasticClient.IndexDocument(elasticBeatmaps);
+            if (!result.IsValid)
+                Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
+        }
+        
         public void IndexBeatmap(BeatmapSet set)
         {
             _pool.QueueWorkItem(rIndexBeatmap, set);
