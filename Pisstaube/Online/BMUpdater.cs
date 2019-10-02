@@ -59,89 +59,99 @@ namespace Pisstaube.Online
             {
                 if (crawler.IsCrawling) // Preventing a random crash while crawling!
                 {
-                    Thread.Sleep(1000); 
+                    Thread.Sleep(1000);
                     continue;
                 }
-                
+
                 var beatmapSets = _factory.Get().BeatmapSet.Where(x => !x.Disabled)
-                                          .Where(
-                                              x => x.LastChecked != null && ((
-                                                                                 (
-                                                                                     x.RankedStatus == BeatmapSetOnlineStatus.None ||
-                                                                                     x.RankedStatus == BeatmapSetOnlineStatus.Graveyard ||
-                                                                                     x.RankedStatus == BeatmapSetOnlineStatus.Pending ||
-                                                                                     x.RankedStatus == BeatmapSetOnlineStatus.Ranked ||
-                                                                                     x.RankedStatus == BeatmapSetOnlineStatus.Loved
-                                                                                 ) &&
-                                                                                 (x.LastChecked.Value + TimeSpan.FromDays(30))
-                                                                                 .Subtract(DateTime.Now).TotalMilliseconds < 0
-                                                                             ) ||
-                                                                             (
-                                                                                 (
-                                                                                     x.RankedStatus == BeatmapSetOnlineStatus.Qualified ||
-                                                                                     x.RankedStatus == BeatmapSetOnlineStatus.WIP
-                                                                                 ) &&
-                                                                                 (x.LastChecked.Value + TimeSpan.FromDays(1))
-                                                                                 .Subtract(DateTime.Now).TotalMilliseconds < 0
-                                                                             ) ||
-                                                                             (
-                                                                                 (
-                                                                                     x.RankedStatus == BeatmapSetOnlineStatus.Approved
-                                                                                 ) &&
-                                                                                 (x.LastChecked.Value + TimeSpan.FromDays(90))
-                                                                                 .Subtract(DateTime.Now).TotalMilliseconds < 0
-                                                                             ))
-                                          );
-                
+                    .Where(
+                        x => x.LastChecked != null && ((
+                                                           (
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.None ||
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.Graveyard ||
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.Pending ||
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.Ranked ||
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.Loved
+                                                           ) &&
+                                                           (x.LastChecked.Value + TimeSpan.FromDays(30))
+                                                           .Subtract(DateTime.Now).TotalMilliseconds < 0
+                                                       ) ||
+                                                       (
+                                                           (
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.Qualified ||
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.WIP
+                                                           ) &&
+                                                           (x.LastChecked.Value + TimeSpan.FromDays(1))
+                                                           .Subtract(DateTime.Now).TotalMilliseconds < 0
+                                                       ) ||
+                                                       (
+                                                           (
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.Approved
+                                                           ) &&
+                                                           (x.LastChecked.Value + TimeSpan.FromDays(90))
+                                                           .Subtract(DateTime.Now).TotalMilliseconds < 0
+                                                       ))
+                    );
+
                 foreach (var bmSet in beatmapSets.ToList())
                 {
-                    bmSet.ChildrenBeatmaps = _factory.Get().Beatmaps.Where(x => x.ParentSetId == bmSet.SetId).ToList();
-                    var setRequest = new GetBeatmapSetRequest(bmSet.SetId);
-                    _rl.Limit();
-                    setRequest.Perform(_apiAccess);
-
-                    Logger.LogPrint("Updating BeatmapSetId " + bmSet.SetId);
-
-                    var setInfo = setRequest.Result.ToBeatmapSet(_store);
-                    var newBm = BeatmapSet.FromBeatmapSetInfo(setInfo);
-
-                    using (var db = _factory.GetForWrite())
+                    try
                     {
-                        var hasChanged = false;
-                        foreach (var cb in newBm.ChildrenBeatmaps)
+                        bmSet.ChildrenBeatmaps =
+                            _factory.Get().Beatmaps.Where(x => x.ParentSetId == bmSet.SetId).ToList();
+                        var setRequest = new GetBeatmapSetRequest(bmSet.SetId);
+                        _rl.Limit();
+                        setRequest.Perform(_apiAccess);
+
+                        Logger.LogPrint("Updating BeatmapSetId " + bmSet.SetId);
+
+                        var setInfo = setRequest.Result.ToBeatmapSet(_store);
+                        var newBm = BeatmapSet.FromBeatmapSetInfo(setInfo);
+
+                        using (var db = _factory.GetForWrite())
                         {
-                            var fInfo = _bmDl.Download(cb);
-                            var ha = _cFactory.Get().CacheBeatmaps.Where(b => b.Hash == fInfo.Hash).Select(f => f.FileMd5).FirstOrDefault();
-                            cb.FileMd5 = ha;
-                        
-                            db.Context.Entry(cb).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-                            db.Context.Beatmaps.Update(cb);
-                        
-                            if (bmSet.ChildrenBeatmaps.Any(x => x.FileMd5 == ha))
-                                continue;
+                            var hasChanged = false;
+                            foreach (var cb in newBm.ChildrenBeatmaps)
+                            {
+                                var fInfo = _bmDl.Download(cb);
+                                var ha = _cFactory.Get().CacheBeatmaps.Where(b => b.Hash == fInfo.Hash)
+                                    .Select(f => f.FileMd5).FirstOrDefault();
+                                cb.FileMd5 = ha;
 
-                            hasChanged = true;
+                                db.Context.Entry(cb).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+                                db.Context.Beatmaps.Update(cb);
+
+                                if (bmSet.ChildrenBeatmaps.Any(x => x.FileMd5 == ha))
+                                    continue;
+
+                                hasChanged = true;
+                            }
+
+                            if (newBm.ChildrenBeatmaps.Count > bmSet.ChildrenBeatmaps.Count)
+                                hasChanged = true;
+
+                            var bmFileId = newBm.SetId.ToString("x8");
+                            var bmFileIdNoVid = newBm.SetId.ToString("x8") + "_novid";
+
+                            if (hasChanged)
+                            {
+                                _storage.GetStorageForDirectory("cache").Delete(bmFileId);
+                                _storage.GetStorageForDirectory("cache").Delete(bmFileIdNoVid);
+
+                                _search.DeleteBeatmap(newBm.SetId);
+                                _search.IndexBeatmap(newBm);
+                            }
+
+                            db.Context.Entry(newBm).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+                            db.Context.BeatmapSet.Update(newBm);
                         }
 
-                        if (newBm.ChildrenBeatmaps.Count > bmSet.ChildrenBeatmaps.Count)
-                            hasChanged = true;
-
-                        var bmFileId = newBm.SetId.ToString("x8");
-                        var bmFileIdNoVid = newBm.SetId.ToString("x8") + "_novid";
-                    
-                        if (hasChanged) {
-                            _storage.GetStorageForDirectory("cache").Delete(bmFileId);
-                            _storage.GetStorageForDirectory("cache").Delete(bmFileIdNoVid);
-                        
-                            _search.DeleteBeatmap(newBm.SetId);
-                            _search.IndexBeatmap(newBm);
-                        }
-                    
-                        db.Context.Entry(newBm).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-                        db.Context.BeatmapSet.Update(newBm);
+                        FileSafety.DeleteCleanupDirectory();
                     }
-                    
-                    FileSafety.DeleteCleanupDirectory();
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "Unknown Erro while updating!");
+                    }
                 }
             }
         }
