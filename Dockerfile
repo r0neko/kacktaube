@@ -5,7 +5,7 @@ WORKDIR /pisstaube
 COPY . /pisstaube
 
 RUN dotnet restore
-RUN dotnet publish Pisstaube -c Release -o out
+RUN dotnet publish Pisstaube -c Release -o /pisstaube/out
 
 FROM mcr.microsoft.com/dotnet/core/aspnet:2.2
 WORKDIR /pisstaube
