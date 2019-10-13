@@ -22,8 +22,8 @@ namespace Pisstaube.Online.Crawler
         private bool _force_stop;
         private int _fail_count;
 
-        public int LatestId { get; private set; }
-        public bool IsCrawling { get; private set; }
+        public int LatestId { get; private set; } = 0;
+        public bool IsCrawling { get; private set; } = false;
 
         private object _lock = new object ( );
         private List<Thread> _pool;
