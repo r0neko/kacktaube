@@ -59,7 +59,7 @@ namespace Pisstaube.Online
         {
             while (true)
             {
-                if (crawler.IsCrawling) // Preventing a random crash while crawling!
+                if (crawler?.IsCrawling == true) // Preventing a random crash while crawling!
                 {
                     Thread.Sleep (1000);
                     continue;
