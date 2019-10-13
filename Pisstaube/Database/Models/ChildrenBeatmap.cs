@@ -1,7 +1,11 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 using Newtonsoft.Json;
+
 using osu.Game.Beatmaps;
+
 using Pisstaube.Enums;
 using Pisstaube.Utils;
 
@@ -12,58 +16,59 @@ namespace Pisstaube.Database.Models
     {
         [Key]
         [Required]
-        [JsonProperty("BeatmapID")]
+        [JsonProperty ("BeatmapID")]
         public int BeatmapId { get; set; }
 
-        [JsonProperty("ParentSetID")]
+        [JsonProperty ("ParentSetID")]
         public int ParentSetId { get; set; }
-        
-        [JsonIgnore]
-        public BeatmapSet Parent { get; set; } 
 
-        [JsonProperty("DiffName")]
+        [JsonIgnore]
+        [ForeignKey (nameof (ParentSetId))]
+        public BeatmapSet Parent { get; set; }
+
+        [JsonProperty ("DiffName")]
         public string DiffName { get; set; }
 
-        [JsonProperty("FileMD5")]
+        [JsonProperty ("FileMD5")]
         public string FileMd5 { get; set; }
 
-        [JsonProperty("Mode")]
+        [JsonProperty ("Mode")]
         public PlayMode Mode { get; set; }
 
-        [JsonProperty("BPM")]
+        [JsonProperty ("BPM")]
         public double Bpm { get; set; }
 
-        [JsonProperty("AR")]
+        [JsonProperty ("AR")]
         public float Ar { get; set; }
 
-        [JsonProperty("OD")]
+        [JsonProperty ("OD")]
         public float Od { get; set; }
 
-        [JsonProperty("CS")]
+        [JsonProperty ("CS")]
         public float Cs { get; set; }
 
-        [JsonProperty("HP")]
+        [JsonProperty ("HP")]
         public float Hp { get; set; }
 
-        [JsonProperty("TotalLength")]
+        [JsonProperty ("TotalLength")]
         public int TotalLength { get; set; }
 
-        [JsonProperty("HitLength")]
+        [JsonProperty ("HitLength")]
         public long HitLength { get; set; }
 
-        [JsonProperty("Playcount")]
+        [JsonProperty ("Playcount")]
         public int Playcount { get; set; }
 
-        [JsonProperty("Passcount")]
+        [JsonProperty ("Passcount")]
         public int Passcount { get; set; }
 
-        [JsonProperty("MaxCombo")]
+        [JsonProperty ("MaxCombo")]
         public long MaxCombo { get; set; }
 
-        [JsonProperty("DifficultyRating")]
+        [JsonProperty ("DifficultyRating")]
         public double DifficultyRating { get; set; }
 
-        public static ChildrenBeatmap FromBeatmapInfo(BeatmapInfo info, BeatmapSetOnlineInfo setOnlineInfo, BeatmapSet parent = null)
+        public static ChildrenBeatmap FromBeatmapInfo (BeatmapInfo info, BeatmapSetOnlineInfo setOnlineInfo, BeatmapSet parent = null)
         {
             if (info == null)
                 return null;
@@ -87,57 +92,57 @@ namespace Pisstaube.Database.Models
                 MaxCombo = info.OnlineInfo.CircleCount,
                 DifficultyRating = info.StarDifficulty
             };
-            
+
             return cb;
         }
 
-        public string ToDirect() => $"{DiffName.Replace("@", "")} " +
-                                    $"({Math.Round(DifficultyRating, 2)}★~" +
-                                    $"{Bpm}♫~AR" +
-                                    $"{Ar}~OD" +
-                                    $"{Od}~CS" +
-                                    $"{Cs}~HP" +
-                                    $"{Hp}~" +
-                                    $"{(int)MathF.Floor(TotalLength) / 60}m" +
-                                    $"{TotalLength % 60}s)@" +
-                                    $"{(int)Mode},";
+        public string ToDirect ( ) => $"{DiffName.Replace("@", "")} " +
+            $"({Math.Round(DifficultyRating, 2)}★~" +
+            $"{Bpm}♫~AR" +
+            $"{Ar}~OD" +
+            $"{Od}~CS" +
+            $"{Cs}~HP" +
+            $"{Hp}~" +
+            $"{(int)MathF.Floor(TotalLength) / 60}m" +
+            $"{TotalLength % 60}s)@" +
+            $"{(int)Mode},";
 
-        public void ReadFromStream(MStreamReader sr)
+        public void ReadFromStream (MStreamReader sr)
         {
-            BeatmapId = sr.ReadInt32();
-            ParentSetId = sr.ReadInt32();
-            DiffName = sr.ReadString();
-            FileMd5 = sr.ReadString();
-            Mode = (PlayMode) sr.ReadSByte();
-            Bpm = sr.ReadInt32();
-            Ar = sr.ReadSingle();
-            Od = sr.ReadSingle();
-            Cs = sr.ReadSingle();
-            Hp = sr.ReadSingle();
-            TotalLength = sr.ReadInt32();
-            Playcount = sr.ReadInt32();
-            Passcount = sr.ReadInt32();
-            MaxCombo = sr.ReadInt64();
-            DifficultyRating = sr.ReadDouble();
+            BeatmapId = sr.ReadInt32 ( );
+            ParentSetId = sr.ReadInt32 ( );
+            DiffName = sr.ReadString ( );
+            FileMd5 = sr.ReadString ( );
+            Mode = (PlayMode) sr.ReadSByte ( );
+            Bpm = sr.ReadInt32 ( );
+            Ar = sr.ReadSingle ( );
+            Od = sr.ReadSingle ( );
+            Cs = sr.ReadSingle ( );
+            Hp = sr.ReadSingle ( );
+            TotalLength = sr.ReadInt32 ( );
+            Playcount = sr.ReadInt32 ( );
+            Passcount = sr.ReadInt32 ( );
+            MaxCombo = sr.ReadInt64 ( );
+            DifficultyRating = sr.ReadDouble ( );
         }
 
-        public void WriteToStream(MStreamWriter sw)
+        public void WriteToStream (MStreamWriter sw)
         {
-            sw.Write(BeatmapId);
-            sw.Write(ParentSetId);
-            sw.Write(DiffName, true);
-            sw.Write(FileMd5, true);
-            sw.Write((sbyte) Mode);
-            sw.Write(Bpm);
-            sw.Write(Ar);
-            sw.Write(Od);
-            sw.Write(Cs);
-            sw.Write(Hp);
-            sw.Write(TotalLength);
-            sw.Write(Playcount);
-            sw.Write(Passcount);
-            sw.Write(MaxCombo);
-            sw.Write(DifficultyRating);
+            sw.Write (BeatmapId);
+            sw.Write (ParentSetId);
+            sw.Write (DiffName, true);
+            sw.Write (FileMd5, true);
+            sw.Write ((sbyte) Mode);
+            sw.Write (Bpm);
+            sw.Write (Ar);
+            sw.Write (Od);
+            sw.Write (Cs);
+            sw.Write (Hp);
+            sw.Write (TotalLength);
+            sw.Write (Playcount);
+            sw.Write (Passcount);
+            sw.Write (MaxCombo);
+            sw.Write (DifficultyRating);
         }
     }
 }

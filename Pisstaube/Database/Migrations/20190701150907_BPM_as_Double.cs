@@ -1,25 +1,25 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Pisstaube.Database.Migrations
 {
     public partial class BPM_as_Double : Migration
     {
-        protected override void Up(MigrationBuilder migrationBuilder)
+        protected override void Up (MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<double>(
+            migrationBuilder.AlterColumn<double> (
                 name: "Bpm",
                 table: "Beatmaps",
-                nullable: false,
-                oldClrType: typeof(float));
+                nullable : false,
+                oldClrType : typeof (float));
         }
 
-        protected override void Down(MigrationBuilder migrationBuilder)
+        protected override void Down (MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<float>(
+            migrationBuilder.AlterColumn<float> (
                 name: "Bpm",
                 table: "Beatmaps",
-                nullable: false,
-                oldClrType: typeof(double));
+                nullable : false,
+                oldClrType : typeof (double));
         }
     }
 }

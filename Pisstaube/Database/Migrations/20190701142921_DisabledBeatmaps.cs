@@ -1,21 +1,21 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Pisstaube.Database.Migrations
 {
     public partial class DisabledBeatmaps : Migration
     {
-        protected override void Up(MigrationBuilder migrationBuilder)
+        protected override void Up (MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<bool>(
+            migrationBuilder.AddColumn<bool> (
                 name: "Disabled",
                 table: "BeatmapSet",
-                nullable: false,
-                defaultValue: false);
+                nullable : false,
+                defaultValue : false);
         }
 
-        protected override void Down(MigrationBuilder migrationBuilder)
+        protected override void Down (MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
+            migrationBuilder.DropColumn (
                 name: "Disabled",
                 table: "BeatmapSet");
         }

@@ -11,14 +11,14 @@ using Pisstaube.Database;
 namespace Pisstaube.Database.Migrations
 {
     [DbContext (typeof (PisstaubeDbContext))]
-    [Migration ("20190701142921_DisabledBeatmaps")]
-    partial class DisabledBeatmaps
+    [Migration ("20191003105851_ForeignKey")]
+    partial class ForeignKey
     {
         protected override void BuildTargetModel (ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation ("ProductVersion", "2.2.4-servicing-10062")
+                .HasAnnotation ("ProductVersion", "2.2.6-servicing-10079")
                 .HasAnnotation ("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity ("Pisstaube.Database.Models.BeatmapSet", b =>
@@ -66,7 +66,7 @@ namespace Pisstaube.Database.Migrations
 
                 b.Property<float> ("Ar");
 
-                b.Property<int> ("Bpm");
+                b.Property<double> ("Bpm");
 
                 b.Property<float> ("Cs");
 

@@ -5,10 +5,6 @@ services:
     build: ./
     volumes:
       - ./data/pisstaube_data/:/pisstaube/data
-    links:
-      - datadog
-      - db
-      - elasticsearch
     depends_on:
       - datadog
       - db
@@ -24,13 +20,14 @@ services:
       - ELASTIC_PORT=9200
     env_file:
       - docker.env
+    networks:
+      - pisstaube_back
     restart: always
     ports:
       - 62011:80
 
   elasticsearch:
     image: bitnami/elasticsearch
-    container_name: elasticsearch
     environment:
       - discovery.type=single-node
       - http.host=0.0.0.0
@@ -41,20 +38,24 @@ services:
       memlock:
         soft: -1
         hard: -1
-    #volumes:
-    #  - ./data/elasticsearch_data/:/bitnami/elasticsearch/data
+    networks:
+      - pisstaube_back
+    volumes:
+      - ./data/logs/elastic/:/var/log/elasticsearch/
     expose:
       - 9200
+      - 9300
     #ports:
     #  - 9200:9200
 
   db:
-    container_name: db
     image: mysql:5.7.23
     command: --default-authentication-plugin=mysql_native_password
     volumes:
       - ./data/mysql_data/:/var/lib/mysql
     restart: on-failure
+    networks:
+      - pisstaube_back
     environment:
       - MYSQL_ROOT_PASSWORD=supersecretpasswordthatnobodywilleverknowsincenobodycanconencttothisdatabasepog
       - MYSQL_ROOT_HOST=%
@@ -62,11 +63,22 @@ services:
       - 3306
 
   datadog:
-    container_name: datadog
     image: datadog/docker-dd-agent:latest
+    depends_on:
+      - elasticsearch
+      - db
     env_file:
       - docker.env
     restart: on-failure
+    networks:
+      - pisstaube_back
+    volumes:
+      - ./data/logs/elastic/:/var/log/elasticsearch/
+      - ./config/datadog/:/etc/dd-gent/conf.d/
     expose:
       - 8125
       - 8126
+
+networks:
+  pisstaube_back:
+    driver: bridge

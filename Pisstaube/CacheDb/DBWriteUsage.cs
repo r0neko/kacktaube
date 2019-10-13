@@ -9,7 +9,7 @@ namespace Pisstaube.CacheDb
         public readonly PisstaubeCacheDbContext Context;
         private readonly Action<DBWriteUsage> usageCompleted;
 
-        public DBWriteUsage(PisstaubeCacheDbContext context, Action<DBWriteUsage> onCompleted)
+        public DBWriteUsage (PisstaubeCacheDbContext context, Action<DBWriteUsage> onCompleted)
         {
             Context = context;
             usageCompleted = onCompleted;
@@ -18,11 +18,11 @@ namespace Pisstaube.CacheDb
         public bool PerformedWrite { get; private set; }
 
         private bool isDisposed;
-        public List<Exception> Errors = new List<Exception>();
-        
+        public List<Exception> Errors = new List<Exception> ( );
+
         public bool IsTransactionLeader = false;
 
-        protected void Dispose(bool disposing)
+        protected void Dispose (bool disposing)
         {
             if (isDisposed) return;
 
@@ -30,28 +30,28 @@ namespace Pisstaube.CacheDb
 
             try
             {
-                PerformedWrite |= Context.SaveChanges() > 0;
+                PerformedWrite |= Context.SaveChanges ( ) > 0;
             }
             catch (Exception e)
             {
-                Errors.Add(e);
+                Errors.Add (e);
                 throw;
             }
             finally
             {
-                usageCompleted?.Invoke(this);
+                usageCompleted?.Invoke (this);
             }
         }
 
-        public void Dispose()
+        public void Dispose ( )
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            Dispose (true);
+            GC.SuppressFinalize (this);
         }
 
-        ~DBWriteUsage()
+        ~DBWriteUsage ( )
         {
-            Dispose(false);
+            Dispose (false);
         }
     }
 }

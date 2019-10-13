@@ -1,6 +1,8 @@
 using System.Threading;
+
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
+
 using osu.Framework.Platform;
 
 namespace Pisstaube.CacheDb
@@ -14,7 +16,7 @@ namespace Pisstaube.CacheDb
 
         private ThreadLocal<PisstaubeCacheDbContext> threadContexts;
 
-        private readonly object writeLock = new object();
+        private readonly object writeLock = new object ( );
 
         private bool currentWriteDidWrite;
         private bool currentWriteDidError;
@@ -23,28 +25,28 @@ namespace Pisstaube.CacheDb
 
         private IDbContextTransaction currentWriteTransaction;
 
-        public PisstaubeCacheDbContextFactory(Storage storage)
+        public PisstaubeCacheDbContextFactory (Storage storage)
         {
             this.storage = storage;
-            recycleThreadContexts();
+            recycleThreadContexts ( );
         }
-        
-        public PisstaubeCacheDbContext Get() => threadContexts.Value;
 
-        public DBWriteUsage GetForWrite(bool withTransaction = true)
+        public PisstaubeCacheDbContext Get ( ) => threadContexts.Value;
+
+        public DBWriteUsage GetForWrite (bool withTransaction = true)
         {
-            Monitor.Enter(writeLock);
+            Monitor.Enter (writeLock);
             PisstaubeCacheDbContext context;
 
             try
             {
                 if (currentWriteTransaction == null && withTransaction)
-                { 
+                {
                     if (threadContexts.IsValueCreated)
-                        recycleThreadContexts();
+                        recycleThreadContexts ( );
 
                     context = threadContexts.Value;
-                    currentWriteTransaction = context.Database.BeginTransaction();
+                    currentWriteTransaction = context.Database.BeginTransaction ( );
                 }
                 else
                 {
@@ -53,35 +55,35 @@ namespace Pisstaube.CacheDb
             }
             catch
             {
-                Monitor.Exit(writeLock);
+                Monitor.Exit (writeLock);
                 throw;
             }
 
-            Interlocked.Increment(ref currentWriteUsages);
+            Interlocked.Increment (ref currentWriteUsages);
 
-            return new DBWriteUsage(context, usageCompleted) { IsTransactionLeader = currentWriteTransaction != null && currentWriteUsages == 1 };
+            return new DBWriteUsage (context, usageCompleted) { IsTransactionLeader = currentWriteTransaction != null && currentWriteUsages == 1 };
         }
 
-        private void usageCompleted(DBWriteUsage usage)
+        private void usageCompleted (DBWriteUsage usage)
         {
-            var usages = Interlocked.Decrement(ref currentWriteUsages);
+            var usages = Interlocked.Decrement (ref currentWriteUsages);
 
             try
             {
                 currentWriteDidWrite |= usage.PerformedWrite;
-                currentWriteDidError |= usage.Errors.Any();
+                currentWriteDidError |= usage.Errors.Any ( );
 
                 if (usages == 0)
                 {
                     if (currentWriteDidError)
-                        currentWriteTransaction?.Rollback();
+                        currentWriteTransaction?.Rollback ( );
                     else
-                        currentWriteTransaction?.Commit();
+                        currentWriteTransaction?.Commit ( );
 
                     if (currentWriteDidWrite || currentWriteDidError)
                     {
-                        usage.Context.Dispose();
-                        recycleThreadContexts();
+                        usage.Context.Dispose ( );
+                        recycleThreadContexts ( );
                     }
 
                     currentWriteTransaction = null;
@@ -91,27 +93,27 @@ namespace Pisstaube.CacheDb
             }
             finally
             {
-                Monitor.Exit(writeLock);
+                Monitor.Exit (writeLock);
             }
         }
 
-        private void recycleThreadContexts()
+        private void recycleThreadContexts ( )
         {
-            threadContexts?.Value.Dispose();
-            threadContexts = new ThreadLocal<PisstaubeCacheDbContext>(CreateContext, true);
+            threadContexts?.Value.Dispose ( );
+            threadContexts = new ThreadLocal<PisstaubeCacheDbContext> (CreateContext, true);
         }
 
-        protected virtual PisstaubeCacheDbContext CreateContext() => new PisstaubeCacheDbContext(storage.GetDatabaseConnectionString(database_name))
+        protected virtual PisstaubeCacheDbContext CreateContext ( ) => new PisstaubeCacheDbContext (storage.GetDatabaseConnectionString (database_name))
         {
             Database = { AutoTransactionsEnabled = false }
         };
 
-        public void ResetDatabase()
+        public void ResetDatabase ( )
         {
             lock (writeLock)
             {
-                recycleThreadContexts();
-                storage.DeleteDatabase(database_name);
+                recycleThreadContexts ( );
+                storage.DeleteDatabase (database_name);
             }
         }
     }

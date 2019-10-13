@@ -13,6 +13,7 @@
         <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
         <PackageReference Include="Microsoft.AspNetCore.HttpsPolicy" Version="2.2.0" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.2.6" />
         <PackageReference Include="NEST" Version="7.2.1" />
         <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="2.2.0" />
 
