@@ -24,7 +24,7 @@ services:
       - pisstaube_back
     restart: always
     ports:
-      - 62011:80
+      - 62011:5000
 
   elasticsearch:
     image: bitnami/elasticsearch
