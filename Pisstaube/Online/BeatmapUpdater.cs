@@ -140,7 +140,7 @@ namespace Pisstaube.Online
                                 _storage.GetStorageForDirectory ("cache").Delete (bmFileId);
                                 _storage.GetStorageForDirectory ("cache").Delete (bmFileIdNoVid);
 
-                                _search.DeleteBeatmap (newBm.SetId);
+                                //_search.DeleteBeatmap (newBm.SetId);
                                 _search.IndexBeatmap (newBm);
                             }
 
