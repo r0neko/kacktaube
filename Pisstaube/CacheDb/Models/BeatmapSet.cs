@@ -5,9 +5,7 @@ namespace Pisstaube.CacheDb.Models
 {
     public class CacheBeatmapSet
     {
-        [Key]
-        [Required]
-        public int SetId { get; set; }
+        [Key] [Required] public int SetId { get; set; }
 
         public string Hash { get; set; }
 

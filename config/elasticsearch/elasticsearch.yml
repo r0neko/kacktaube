@@ -1,0 +1,23 @@
+﻿http:
+  port: 9200
+path:
+  data: /bitnami/elasticsearch/data
+transport:
+  tcp:
+    port: 9300
+network:
+  host: 172.31.0.2
+  publish_host: 172.31.0.2
+  bind_host: 0.0.0.0
+cluster:
+  name: elasticsearch-cluster
+node:
+  name: 9740223cf90d
+  master: true
+  data: true
+  ingest: false
+discovery:
+  type: single-node
+
+http.compression: true
+http.max_content_length: 1.5g

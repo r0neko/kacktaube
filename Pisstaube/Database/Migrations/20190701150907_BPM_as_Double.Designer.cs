@@ -12,7 +12,7 @@ namespace Pisstaube.Database.Migrations
 {
     [DbContext (typeof (PisstaubeDbContext))]
     [Migration ("20190701150907_BPM_as_Double")]
-    partial class BPM_as_Double
+    partial class BpmAsDouble
     {
         protected override void BuildTargetModel (ModelBuilder modelBuilder)
         {

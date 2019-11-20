@@ -10,11 +10,11 @@ namespace Pisstaube.Utils
         private DateTime _dt;
         private DateTime _dtNext;
 
-        private int req;
+        private int _req;
 
-        public RequestLimiter (int RequestAmount, TimeSpan howLong)
+        public RequestLimiter(int requestAmount, TimeSpan howLong)
         {
-            _requestAmount = RequestAmount - 1;
+            _requestAmount = requestAmount - 1;
             _howLong = howLong;
             _dt = DateTime.Now;
             _dtNext = DateTime.Now;
@@ -22,26 +22,24 @@ namespace Pisstaube.Utils
             _dtNext += howLong;
         }
 
-        public void Limit ( )
+        public void Limit()
         {
             if (_dt > _dtNext)
             {
-                req = 1;
+                _req = 1;
 
                 _dtNext = DateTime.Now;
                 _dtNext += _howLong;
             }
 
-            if (req > _requestAmount)
-            {
-                if (_dtNext.Subtract (_dt).TotalMilliseconds > 0)
+            if (_req > _requestAmount)
+                if (_dtNext.Subtract(_dt).TotalMilliseconds > 0)
                 {
-                    Console.WriteLine (_dtNext.Subtract (_dt).TotalMilliseconds);
-                    Thread.Sleep (_dtNext.Subtract (_dt));
+                    Console.WriteLine(_dtNext.Subtract(_dt).TotalMilliseconds);
+                    Thread.Sleep(_dtNext.Subtract(_dt));
                 }
-            }
 
-            req++;
+            _req++;
             _dt = DateTime.Now;
         }
     }

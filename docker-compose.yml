@@ -42,11 +42,12 @@ services:
       - pisstaube_back
     volumes:
       - ./data/logs/elastic/:/var/log/elasticsearch/
+      - ./config/elasticsearch/elasticsearch.yml:/opt/bitnami/elasticsearch/config/elasticsearch.yml
     expose:
       - 9200
       - 9300
-    #ports:
-    #  - 9200:9200
+    ports:
+      - 9200:9200
 
   db:
     image: mysql:5.7.23

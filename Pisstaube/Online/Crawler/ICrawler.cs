@@ -7,9 +7,9 @@ namespace Pisstaube.Online.Crawler
         int LatestId { get; }
         bool IsCrawling { get; }
 
-        void BeginCrawling ( );
-        void Stop ( );
-        void Wait ( );
-        bool Crawl (int id, PisstaubeDbContext _context);
+        void BeginCrawling();
+        void Stop();
+        void Wait();
+        bool Crawl(int id, PisstaubeDbContext context);
     }
 }

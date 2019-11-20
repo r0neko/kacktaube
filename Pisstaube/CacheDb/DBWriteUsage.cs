@@ -4,54 +4,54 @@ using System.Collections.Generic;
 namespace Pisstaube.CacheDb
 {
     // Modified version of https://github.com/ppy/osu/blob/master/osu.Game/Database/DatabaseWriteUsage.cs
-    public class DBWriteUsage : IDisposable
+    public class DbWriteUsage : IDisposable
     {
         public readonly PisstaubeCacheDbContext Context;
-        private readonly Action<DBWriteUsage> usageCompleted;
+        private readonly Action<DbWriteUsage> _usageCompleted;
 
-        public DBWriteUsage (PisstaubeCacheDbContext context, Action<DBWriteUsage> onCompleted)
+        public DbWriteUsage(PisstaubeCacheDbContext context, Action<DbWriteUsage> onCompleted)
         {
             Context = context;
-            usageCompleted = onCompleted;
+            _usageCompleted = onCompleted;
         }
 
         public bool PerformedWrite { get; private set; }
 
-        private bool isDisposed;
-        public List<Exception> Errors = new List<Exception> ( );
+        private bool _isDisposed;
+        public List<Exception> Errors = new List<Exception>();
 
         public bool IsTransactionLeader = false;
 
-        protected void Dispose (bool disposing)
+        protected void Dispose(bool disposing)
         {
-            if (isDisposed) return;
+            if (_isDisposed) return;
 
-            isDisposed = true;
+            _isDisposed = true;
 
             try
             {
-                PerformedWrite |= Context.SaveChanges ( ) > 0;
+                PerformedWrite |= Context.SaveChanges() > 0;
             }
             catch (Exception e)
             {
-                Errors.Add (e);
+                Errors.Add(e);
                 throw;
             }
             finally
             {
-                usageCompleted?.Invoke (this);
+                _usageCompleted?.Invoke(this);
             }
         }
 
-        public void Dispose ( )
+        public void Dispose()
         {
-            Dispose (true);
-            GC.SuppressFinalize (this);
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
-        ~DBWriteUsage ( )
+        ~DbWriteUsage()
         {
-            Dispose (false);
+            Dispose(false);
         }
     }
 }

@@ -3,16 +3,13 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
 using osu.Framework.Logging;
 using osu.Framework.Platform;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Formats;
 using osu.Game.IO;
-
 using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
@@ -32,9 +29,9 @@ namespace Pisstaube.Controllers
         RepairPlayModes
     }
 
-    [Route ("api/pisstaube")]
+    [Route("api/pisstaube")]
     [ApiController]
-    public class PrivateAPIController : ControllerBase
+    public class PrivateApiController : ControllerBase
     {
         private readonly PisstaubeDbContextFactory _contextFactory;
         private readonly Storage _storage;
@@ -45,9 +42,9 @@ namespace Pisstaube.Controllers
         private readonly Kaesereibe _reibe;
         private readonly FileStore _store;
 
-        private static readonly object _lock = new object ( );
+        private static readonly object Lock = new object();
 
-        public PrivateAPIController (PisstaubeDbContextFactory contextFactory,
+        public PrivateApiController(PisstaubeDbContextFactory contextFactory,
             Storage storage, BeatmapSearchEngine searchEngine, Crawler crawler, Cleaner cleaner,
             PisstaubeCacheDbContextFactory cache, Kaesereibe reibe, FileStore store)
         {
@@ -62,101 +59,99 @@ namespace Pisstaube.Controllers
         }
 
         // GET /api/pisstaube/dump?key={KEY}
-        [HttpGet ("dump")]
-        public ActionResult DumpDatabase (string key)
+        [HttpGet("dump")]
+        public ActionResult DumpDatabase(string key)
         {
-            if (key != Environment.GetEnvironmentVariable ("PRIVATE_API_KEY"))
-                return Unauthorized ("Key is wrong!");
+            if (key != Environment.GetEnvironmentVariable("PRIVATE_API_KEY"))
+                return Unauthorized("Key is wrong!");
 
-            lock (_lock)
+            lock (Lock)
             {
-                var tmpStorage = _storage.GetStorageForDirectory ("tmp");
+                var tmpStorage = _storage.GetStorageForDirectory("tmp");
 
-                if (tmpStorage.Exists ("dump.piss"))
-                    System.IO.File.Delete (tmpStorage.GetFullPath ("dump.piss"));
+                if (tmpStorage.Exists("dump.piss"))
+                    System.IO.File.Delete(tmpStorage.GetFullPath("dump.piss"));
 
-                using (var dumpStream = tmpStorage.GetStream ("dump.piss", FileAccess.Write))
-                using (var sw = new MStreamWriter (dumpStream))
+                using (var dumpStream = tmpStorage.GetStream("dump.piss", FileAccess.Write))
+                using (var sw = new MStreamWriter(dumpStream))
                 {
-                    sw.Write (_contextFactory.Get ( ).BeatmapSet.Count ( ));
-                    foreach (var bmSet in _contextFactory.Get ( ).BeatmapSet)
+                    sw.Write(_contextFactory.Get().BeatmapSet.Count());
+                    foreach (var bmSet in _contextFactory.Get().BeatmapSet)
                     {
-                        bmSet.ChildrenBeatmaps = _contextFactory.Get ( ).Beatmaps.Where (bm => bm.ParentSetId == bmSet.SetId).ToList ( );
-                        sw.Write (bmSet);
+                        bmSet.ChildrenBeatmaps = _contextFactory.Get().Beatmaps
+                            .Where(bm => bm.ParentSetId == bmSet.SetId).ToList();
+                        sw.Write(bmSet);
                     }
                 }
-                return File (tmpStorage.GetStream ("dump.piss"),
+
+                return File(tmpStorage.GetStream("dump.piss"),
                     "application/octet-stream",
                     "dump.piss");
             }
         }
 
         // GET /api/pisstaube/put?key={}
-        [HttpPut ("put")]
-        public ActionResult PutDatabase (
+        [HttpPut("put")]
+        public ActionResult PutDatabase(
             [FromQuery] string key, [FromQuery] bool drop
         )
         {
-            if (key != Environment.GetEnvironmentVariable ("PRIVATE_API_KEY"))
-                return Unauthorized ("Key is wrong!");
+            if (key != Environment.GetEnvironmentVariable("PRIVATE_API_KEY"))
+                return Unauthorized("Key is wrong!");
 
             if (drop)
             {
-                _searchEngine.DeleteAllBeatmaps ( );
-                using (var db = _contextFactory.GetForWrite ( ))
-                {
-                    db.Context.Database.ExecuteSqlCommand ("SET FOREIGN_KEY_CHECKS = 0;" +
-                        "TRUNCATE TABLE `Beatmaps`;" +
-                        "ALTER TABLE `Beatmaps` AUTO_INCREMENT = 1;" +
-                        "TRUNCATE TABLE `BeatmapSet`;" +
-                        "ALTER TABLE `BeatmapSet` AUTO_INCREMENT = 1;" +
-                        "SET FOREIGN_KEY_CHECKS = 1;");
-                }
+                _searchEngine.DeleteAllBeatmaps();
+                using (var db = _contextFactory.GetForWrite())
+                    db.Context.Database.ExecuteSqlCommand("SET FOREIGN_KEY_CHECKS = 0;" +
+                                                          "TRUNCATE TABLE `Beatmaps`;" +
+                                                          "ALTER TABLE `Beatmaps` AUTO_INCREMENT = 1;" +
+                                                          "TRUNCATE TABLE `BeatmapSet`;" +
+                                                          "ALTER TABLE `BeatmapSet` AUTO_INCREMENT = 1;" +
+                                                          "SET FOREIGN_KEY_CHECKS = 1;");
             }
 
-            lock (_lock)
+            lock (Lock)
             {
                 var f = Request.Form.Files["dump.piss"];
 
-                using (var stream = f.OpenReadStream ( ))
-                using (var sr = new MStreamReader (stream))
-                using (var db = _contextFactory.GetForWrite ( ))
+                using (var stream = f.OpenReadStream())
+                using (var sr = new MStreamReader(stream))
+                using (var db = _contextFactory.GetForWrite())
                 {
-                    var count = sr.ReadInt32 ( );
-                    Logger.LogPrint ($"Count: {count}");
+                    var count = sr.ReadInt32();
+                    Logger.LogPrint($"Count: {count}");
 
                     for (var i = 0; i < count; i++)
-                    {
                         try
                         {
-                            var set = sr.ReadData<BeatmapSet> ( );
+                            var set = sr.ReadData<BeatmapSet>();
 
-                            Logger.LogPrint (
+                            Logger.LogPrint(
                                 $"Importing BeatmapSet {set.SetId} {set.Artist} - {set.Title} ({set.Creator}) of Index {i}",
                                 LoggingTarget.Database, LogLevel.Important);
 
                             if (!drop)
-                                if (db.Context.BeatmapSet.Any (s => s.SetId == set.SetId))
-                                    db.Context.BeatmapSet.Update (set);
+                                if (db.Context.BeatmapSet.Any(s => s.SetId == set.SetId))
+                                    db.Context.BeatmapSet.Update(set);
                                 else
-                                    db.Context.BeatmapSet.Add (set);
+                                    db.Context.BeatmapSet.Add(set);
                             else
-                                db.Context.BeatmapSet.Add (set);
-
+                                db.Context.BeatmapSet.Add(set);
                         }
                         catch (Exception ex)
                         {
-                            Logger.Error (ex, "Unknown error!");
+                            Logger.Error(ex, "Unknown error!");
                         }
-                    }
-                    Logger.LogPrint ("Finish importing maps!");
+
+                    Logger.LogPrint("Finish importing maps!");
                 }
 
-                return Ok ("Success!");
+                return Ok("Success!");
             }
         }
 
-        [SuppressMessage ("ReSharper", "NotAccessedField.Local")]
+        [SuppressMessage("ReSharper", "NotAccessedField.Local")]
         private struct PisstaubeStats
         {
             public int LatestCrawledId;
@@ -166,121 +161,123 @@ namespace Pisstaube.Controllers
             public float StorageUsagePercent;
         }
 
-        private int cInt;
-        // GET /api/pisstaube/stats
-        [HttpGet ("stats")]
-        public ActionResult GetPisstaubeStats ( )
-        {
-            lock (_lock)
-            if (!_crawler.IsCrawling && cInt == 0)
-                cInt = _contextFactory.Get ( ).BeatmapSet.LastOrDefault ( )?.SetId + 1 ?? 0;
+        private int _cInt;
 
-            return Ok (new PisstaubeStats
+        // GET /api/pisstaube/stats
+        [HttpGet("stats")]
+        public ActionResult GetPisstaubeStats()
+        {
+            lock (Lock)
+                if (!_crawler.IsCrawling && _cInt == 0)
+                    _cInt = _contextFactory.Get().BeatmapSet.LastOrDefault()?.SetId + 1 ?? 0;
+
+            return Ok(new PisstaubeStats
             {
                 IsCrawling = _crawler.IsCrawling,
-                    LatestCrawledId = _crawler.IsCrawling ? _crawler.LatestId : cInt,
-                    MaxStorage = _cleaner.MaxSize,
-                    StorageUsed = (ulong) _cleaner.DataDirectorySize,
-                    StorageUsagePercent = (((ulong) _cleaner.DataDirectorySize) / _cleaner.MaxSize) * 100
+                LatestCrawledId = _crawler.IsCrawling ? _crawler.LatestId : _cInt,
+                MaxStorage = _cleaner.MaxSize,
+                StorageUsed = (ulong) _cleaner.DataDirectorySize,
+                StorageUsagePercent = (ulong) _cleaner.DataDirectorySize / _cleaner.MaxSize * 100
             });
         }
 
-        [HttpGet ("recovery")]
-        public async Task<ActionResult> Recovery (
+        [HttpGet("recovery")]
+        public async Task<ActionResult> Recovery(
             [FromQuery] string key, [FromQuery] RecoveryAction action
         )
         {
-            if (key != Environment.GetEnvironmentVariable ("PRIVATE_API_KEY"))
-                return Unauthorized ("Key is wrong!");
+            if (key != Environment.GetEnvironmentVariable("PRIVATE_API_KEY"))
+                return Unauthorized("Key is wrong!");
 
             GlobalConfig.EnableSearch = false;
 
             switch (action)
             {
                 case RecoveryAction.RepairElastic:
-                    Logger.LogPrint ("Repairing ElasticSearch");
-                    _crawler.Stop ( );
-                    _reibe.Stop ( );
+                    Logger.LogPrint("Repairing ElasticSearch");
+                    _crawler.Stop();
+                    _reibe.Stop();
 
-                    _searchEngine.DeleteAllBeatmaps ( );
+                    //_searchEngine.DeleteAllBeatmaps();
 
-                    var bms = await _contextFactory.Get ( ).BeatmapSet.ToListAsync ( );
-                    foreach (var beatmapSet in bms)
-                    {
-                        beatmapSet.ChildrenBeatmaps = await _contextFactory.Get ( ).Beatmaps.Where (b => b.ParentSetId == beatmapSet.SetId).ToListAsync ( );
-                    }
-                    _searchEngine.rIndexBeatmap (bms, true);
+                    var timeOut = _contextFactory.Get().Database.GetCommandTimeout();
+                    
+                    _contextFactory.Get().Database.SetCommandTimeout(int.MaxValue);
+                    
+                    Logger.LogPrint("Begin Fetching Beatmaps (This can take up to an Hour!)");
+                    var bms = await _contextFactory.Get()
+                        .BeatmapSet
+                        .Include(set => set.ChildrenBeatmaps)
+                        .ToListAsync();
+                    
+                    _searchEngine.DeleteAllBeatmaps();
+                    _searchEngine.RIndexBeatmap(bms);
 
-                    if (Environment.GetEnvironmentVariable ("CRAWLER_DISABLED") != "true")
-                        _crawler.BeginCrawling ( );
+                    _contextFactory.Get().Database.SetCommandTimeout(timeOut);
+                    
+                    Logger.LogPrint("Finished Repairing ElasticSearch");
 
-                    if (Environment.GetEnvironmentVariable ("CHEESEGULL_CRAWLER_DISABLED") != "true")
-                        _reibe.BeginCrawling ( );
+                    if (Environment.GetEnvironmentVariable("CRAWLER_DISABLED") != "true")
+                        _crawler.BeginCrawling();
+
+                    if (Environment.GetEnvironmentVariable("CHEESEGULL_CRAWLER_DISABLED") != "true")
+                        _reibe.BeginCrawling();
                     break;
                 case RecoveryAction.RecrawlEverything:
-                    Logger.LogPrint ("Recrawl Everything!");
+                    Logger.LogPrint("Recrawl Everything!");
 
-                    _crawler.Stop ( );
-                    _reibe.Stop ( );
+                    _crawler.Stop();
+                    _reibe.Stop();
 
-                    _searchEngine.DeleteAllBeatmaps ( );
-                    using (var db = _contextFactory.GetForWrite ( ))
-                    {
-                        db.Context.Database.ExecuteSqlCommand ("SET FOREIGN_KEY_CHECKS = 0;" +
-                            "TRUNCATE TABLE `Beatmaps`;" +
-                            "ALTER TABLE `Beatmaps` AUTO_INCREMENT = 1;" +
-                            "TRUNCATE TABLE `BeatmapSet`;" +
-                            "ALTER TABLE `BeatmapSet` AUTO_INCREMENT = 1;" +
-                            "SET FOREIGN_KEY_CHECKS = 1;");
-                    }
-                    using (var cacheDb = _cache.GetForWrite ( ))
-                    {
-                        cacheDb.Context.Database.ExecuteSqlCommand (
+                    _searchEngine.DeleteAllBeatmaps();
+                    using (var db = _contextFactory.GetForWrite())
+                        db.Context.Database.ExecuteSqlCommand("SET FOREIGN_KEY_CHECKS = 0;" +
+                                                              "TRUNCATE TABLE `Beatmaps`;" +
+                                                              "ALTER TABLE `Beatmaps` AUTO_INCREMENT = 1;" +
+                                                              "TRUNCATE TABLE `BeatmapSet`;" +
+                                                              "ALTER TABLE `BeatmapSet` AUTO_INCREMENT = 1;" +
+                                                              "SET FOREIGN_KEY_CHECKS = 1;");
+                    using (var cacheDb = _cache.GetForWrite())
+                        cacheDb.Context.Database.ExecuteSqlCommand(
                             "DELETE FROM `CacheBeatmaps`;" +
                             "DELETE FROM `CacheBeatmapSet`;");
-                    }
-                    if (Environment.GetEnvironmentVariable ("CRAWLER_DISABLED") != "true")
-                        _crawler.BeginCrawling ( );
-                    if (Environment.GetEnvironmentVariable ("CHEESEGULL_CRAWLER_DISABLED") != "true")
-                        _reibe.BeginCrawling ( );
+                    if (Environment.GetEnvironmentVariable("CRAWLER_DISABLED") != "true")
+                        _crawler.BeginCrawling();
+                    if (Environment.GetEnvironmentVariable("CHEESEGULL_CRAWLER_DISABLED") != "true")
+                        _reibe.BeginCrawling();
                     break;
                 case RecoveryAction.RecrawlUnknown:
-                    Logger.LogPrint ("Recrawl All unknown maps!");
+                    Logger.LogPrint("Recrawl All unknown maps!");
 
-                    _crawler.Stop ( );
-                    using (var db = _contextFactory.GetForWrite ( ))
-                    {
-                        for (var i = 0; i < db.Context.BeatmapSet.Last ( ).SetId; i++)
-                        {
-                            if (!db.Context.BeatmapSet.Any (set => set.SetId == i))
-                                _crawler.Crawl (i, db.Context);
-                        }
-                    }
-                    _crawler.BeginCrawling ( );
+                    _crawler.Stop();
+                    using (var db = _contextFactory.GetForWrite())
+                        for (var i = 0; i < db.Context.BeatmapSet.Last().SetId; i++)
+                            if (!db.Context.BeatmapSet.Any(set => set.SetId == i))
+                                _crawler.Crawl(i, db.Context);
+                    _crawler.BeginCrawling();
                     break;
 
                 case RecoveryAction.RepairPlayModes:
-                    _crawler.Stop ( );
+                    _crawler.Stop();
 
-                    _searchEngine.DeleteAllBeatmaps ( );
-                    using (var db = _contextFactory.GetForWrite ( ))
-                    {
+                    _searchEngine.DeleteAllBeatmaps();
+                    using (var db = _contextFactory.GetForWrite())
                         foreach (var bm in db.Context.Beatmaps)
                         {
-                            var cbm = _cache.Get ( ).CacheBeatmaps.FirstOrDefault (b => b.FileMd5 == bm.FileMd5);
+                            var cbm = _cache.Get().CacheBeatmaps.FirstOrDefault(b => b.FileMd5 == bm.FileMd5);
                             if (cbm == null)
                                 continue;
 
-                            var file = _store.QueryFiles (f => f.Hash == cbm.Hash).FirstOrDefault ( );
+                            var file = _store.QueryFiles(f => f.Hash == cbm.Hash).FirstOrDefault();
                             if (file != null)
                             {
-                                if (!System.IO.File.Exists (file.StoragePath))
+                                if (!System.IO.File.Exists(file.StoragePath))
                                     continue;
 
                                 Beatmap osubm;
-                                using (var stream = System.IO.File.OpenRead (file.StoragePath))
-                                using (var streamReader = new StreamReader (stream))
-                                osubm = Decoder.GetDecoder<Beatmap> (streamReader).Decode (streamReader);
+                                using (var stream = System.IO.File.OpenRead(file.StoragePath))
+                                using (var streamReader = new LineBufferedReader(stream))
+                                    osubm = Decoder.GetDecoder<Beatmap>(streamReader).Decode(streamReader);
 
                                 if (osubm == null)
                                     continue;
@@ -288,23 +285,22 @@ namespace Pisstaube.Controllers
                                 bm.Mode = (PlayMode) osubm.BeatmapInfo.RulesetID;
                             }
 
-                            _searchEngine.IndexBeatmap (db.Context.BeatmapSet.First (set => set.SetId == bm.ParentSetId));
+                            _searchEngine.IndexBeatmap(db.Context.BeatmapSet.First(set => set.SetId == bm.ParentSetId));
                         }
-                    }
 
-                    if (Environment.GetEnvironmentVariable ("CRAWLER_DISABLED") != "true")
-                        _crawler.BeginCrawling ( );
+                    if (Environment.GetEnvironmentVariable("CRAWLER_DISABLED") != "true")
+                        _crawler.BeginCrawling();
 
-                    if (Environment.GetEnvironmentVariable ("CHEESEGULL_CRAWLER_DISABLED") != "true")
-                        _reibe.BeginCrawling ( );
+                    if (Environment.GetEnvironmentVariable("CHEESEGULL_CRAWLER_DISABLED") != "true")
+                        _reibe.BeginCrawling();
                     break;
                 default:
-                    return BadRequest ("Unknown Action type!");
+                    return BadRequest("Unknown Action type!");
             }
 
             GlobalConfig.EnableSearch = true;
 
-            return Ok ("Success!");
+            return Ok("Success!");
         }
     }
 }
