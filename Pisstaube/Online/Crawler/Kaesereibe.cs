@@ -116,7 +116,7 @@ namespace Pisstaube.Online.Crawler
         {
             lock (_lock)
                 if (LatestId == 0)
-                    LatestId = _contextFactory.Get().BeatmapSet.LastOrDefault()?.SetId + 1 ?? 0;
+                    LatestId = _contextFactory.Get().BeatmapSet.OrderByDescending(s => s.SetId).FirstOrDefault()?.SetId + 1 ?? 0;
 
             while (!_shouldStop)
             {
