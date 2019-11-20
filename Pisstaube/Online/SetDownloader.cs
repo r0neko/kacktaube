@@ -7,6 +7,7 @@ using osu.Game.Beatmaps;
 using osu.Game.Online.API;
 using osu.Game.Online.API.Requests;
 using osu.Game.Scoring.Legacy;
+using Pisstaube.Allocation;
 using Pisstaube.CacheDb;
 using Pisstaube.CacheDb.Models;
 using Pisstaube.Database;
@@ -19,6 +20,13 @@ namespace Pisstaube.Online
 {
     public class SetDownloader
     {
+        public class DownloadMapResponse
+        {
+            public string File;
+            public Stream FileStream;
+            public string IPFSHash;
+        }
+
         private readonly Storage _storage;
         private readonly APIAccess _apiAccess;
         private readonly PisstaubeDbContextFactory _factory;
@@ -26,6 +34,7 @@ namespace Pisstaube.Online
         private readonly Cleaner _cleaner;
         private readonly RequestLimiter _limiter;
         private readonly BeatmapSearchEngine _search;
+        private readonly IPFSCache _ipfsCache;
 
         public SetDownloader(Storage storage,
             APIAccess apiAccess,
@@ -33,7 +42,8 @@ namespace Pisstaube.Online
             PisstaubeCacheDbContextFactory cfactory,
             Cleaner cleaner,
             RequestLimiter limiter,
-            BeatmapSearchEngine search
+            BeatmapSearchEngine search,
+            IPFSCache ipfsCache
         )
         {
             _storage = storage;
@@ -43,9 +53,10 @@ namespace Pisstaube.Online
             _cleaner = cleaner;
             _limiter = limiter;
             _search = search;
+            _ipfsCache = ipfsCache;
         }
 
-        public Tuple<string, Stream> DownloadMap(int beatmapSetId, bool dlVideo = false)
+        public DownloadMapResponse DownloadMap(int beatmapSetId, bool dlVideo = false, bool ipfs = false)
         {
             if (_apiAccess.State == APIState.Offline)
             {
@@ -134,9 +145,13 @@ namespace Pisstaube.Online
 
                 DogStatsd.Increment("beatmap.downloads");
 
-                return Tuple.Create(
-                    $"{set.SetId} {set.Artist} - {set.Title}.osz",
-                    cacheStorage.GetStream(bmFileId));
+                var cac = _ipfsCache.CacheFile("cache/" + bmFileId);
+                
+                return new DownloadMapResponse {
+                    File = $"{set.SetId} {set.Artist} - {set.Title}.osz",
+                    FileStream = !ipfs && cac.Result == "" ? cacheStorage.GetStream (bmFileId) : null, // Don't even bother opening a stream.
+                    IPFSHash = cac.Result,
+                };
             }
 
             using (var db = _cfactory.GetForWrite())
@@ -158,10 +173,13 @@ namespace Pisstaube.Online
 
             DogStatsd.Increment("beatmap.downloads");
 
-            return Tuple.Create(
-                $"{set.SetId} {set.Artist} - {set.Title}.osz",
-                cacheStorage.GetStream(bmFileId)
-            );
+            var cache = _ipfsCache.CacheFile("cache/" + bmFileId);
+            
+            return new DownloadMapResponse {
+                File = $"{set.SetId} {set.Artist} - {set.Title}.osz",
+                FileStream = !ipfs && cache.Result == "" ? cacheStorage.GetStream (bmFileId) : null, // Don't even bother opening a stream.
+                IPFSHash = cache.Result,
+            };
         }
     }
 }

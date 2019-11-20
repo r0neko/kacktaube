@@ -9,6 +9,7 @@ services:
       - datadog
       - db
       - elasticsearch
+      - ipfs
     environment:
       - MARIADB_HOST=db
       - MARIADB_PORT=3306
@@ -79,6 +80,19 @@ services:
     expose:
       - 8125
       - 8126
+
+  ipfs:
+    image: ipfs/go-ipfs:latest
+    restart: on-failure
+    networks:
+      - pisstaube_back
+    volumes:
+      - ./data/ipfs_data/:/data/ipfs/
+    expose:
+      - 8080
+      - 8081
+      - 4001
+      - 5001
 
 networks:
   pisstaube_back:

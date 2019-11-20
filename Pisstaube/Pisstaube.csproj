@@ -9,6 +9,7 @@
         <PackageReference Include="DogStatsD-CSharp-Client" Version="3.4.0" />
         <PackageReference Include="dotenv.net" Version="1.0.6" />
         <PackageReference Include="Elasticsearch.Net" Version="7.4.1" />
+        <PackageReference Include="Ipfs.Http.Client" Version="0.33.0" />
         
         <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
         <PackageReference Include="Microsoft.AspNetCore.HttpsPolicy" Version="2.2.0" />

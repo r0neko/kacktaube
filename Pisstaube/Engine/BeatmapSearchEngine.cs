@@ -23,8 +23,7 @@ namespace Pisstaube.Engine
         public BeatmapSearchEngine(PisstaubeDbContextFactory contextFactory)
         {
             _contextFactory = contextFactory;
-            _pool = new SmartThreadPool();
-            _pool.MaxThreads = Environment.ProcessorCount * 4;
+            _pool = new SmartThreadPool {MaxThreads = Environment.ProcessorCount * 4};
             _pool.Start();
 
             var settings = new ConnectionSettings(

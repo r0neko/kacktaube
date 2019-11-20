@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
 using osu.Game.Online.API;
@@ -110,7 +111,7 @@ namespace Pisstaube.Controllers
 
         // GET /d/:SetId
         [HttpGet("d/{beatmapSetId:int}")]
-        public ActionResult GetSet(int beatmapSetId)
+        public ActionResult GetSet(int beatmapSetId, bool ipfs = false)
         {
             if (_apiAccess.State == APIState.Offline)
             {
@@ -121,10 +122,10 @@ namespace Pisstaube.Controllers
                 return StatusCode(503, "Osu! API is not available.");
             }
 
-            Tuple<string, Stream> r;
+            SetDownloader.DownloadMapResponse r;
             try
             {
-                r = _setDownloader.DownloadMap(beatmapSetId, !Request.Query.ContainsKey("novideo"));
+                r = _setDownloader.DownloadMap(beatmapSetId, !Request.Query.ContainsKey("novideo"), ipfs);
             }
             catch (UnauthorizedAccessException)
             {
@@ -142,10 +143,20 @@ namespace Pisstaube.Controllers
             {
                 return StatusCode(404, "Beatmap got DMCA'd!");
             }
+            
+            if (ipfs && r.IPFSHash != "")
+                return Ok(JsonConvert.SerializeObject(new
+                {
+                    Name = r.File,
+                    Hash = r.IPFSHash
+                }));
+            
+            if (r.FileStream != null)
+                return File (r.FileStream,
+                    "application/octet-stream",
+                    r.File);
 
-            return File(r.Item2,
-                "application/octet-stream",
-                r.Item1);
+            return Ok("Failed to open stream!");
         }
     }
 }
