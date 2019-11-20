@@ -102,7 +102,7 @@ namespace Pisstaube
                 .AddSingleton<BeatmapDownloader>()
                 .AddSingleton<Crawler>()
                 .AddSingleton<SetDownloader>()
-                .AddSingleton<IPFSCache>()
+                .AddSingleton<IpfsCache>()
                 .AddSingleton(new RequestLimiter(1200, TimeSpan.FromMinutes(1)))
                 .AddSingleton<Kaesereibe>();
 

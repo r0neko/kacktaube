@@ -19,6 +19,7 @@ services:
       - MARIADB_DATABASE=pisstaube
       - ELASTIC_HOSTNAME=elasticsearch
       - ELASTIC_PORT=9200
+      - IPFS_HOST=http://ipfs:5001
     env_file:
       - docker.env
     networks:

@@ -1,15 +1,16 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Ipfs.Http;
 using osu.Framework.Platform; 
  
 namespace Pisstaube.Allocation 
 { 
-    public class IPFSCache 
+    public class IpfsCache 
     { 
         private readonly Storage _storage; 
-        private readonly IpfsClient ipfs = new IpfsClient(); 
+        private readonly IpfsClient _ipfs = new IpfsClient(Environment.GetEnvironmentVariable("IPFS_HOST")); 
  
-        public IPFSCache(Storage storage) 
+        public IpfsCache(Storage storage) 
         { 
             _storage = storage; 
         } 
@@ -18,7 +19,7 @@ namespace Pisstaube.Allocation
         { 
             try 
             { 
-                var fileInfo = await ipfs.FileSystem.AddFileAsync(_storage.GetFullPath(path)); 
+                var fileInfo = await _ipfs.FileSystem.AddFileAsync(_storage.GetFullPath(path)); 
              
                 return fileInfo?.Id.Hash.ToBase58(); 
             } 

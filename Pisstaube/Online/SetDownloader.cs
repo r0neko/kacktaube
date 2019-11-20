@@ -34,7 +34,7 @@ namespace Pisstaube.Online
         private readonly Cleaner _cleaner;
         private readonly RequestLimiter _limiter;
         private readonly BeatmapSearchEngine _search;
-        private readonly IPFSCache _ipfsCache;
+        private readonly IpfsCache _ipfsCache;
 
         public SetDownloader(Storage storage,
             APIAccess apiAccess,
@@ -43,7 +43,7 @@ namespace Pisstaube.Online
             Cleaner cleaner,
             RequestLimiter limiter,
             BeatmapSearchEngine search,
-            IPFSCache ipfsCache
+            IpfsCache ipfsCache
         )
         {
             _storage = storage;
