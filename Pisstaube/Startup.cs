@@ -24,6 +24,8 @@ using Pisstaube.Online;
 using Pisstaube.Online.Crawler;
 using Pisstaube.Utils;
 using StatsdClient;
+using Utf8Json;
+using Utf8Json.Resolvers;
 
 namespace Pisstaube
 {
@@ -122,6 +124,8 @@ namespace Pisstaube
             });
 
             services.AddRouting();
+            
+            JsonUtil.Initialize();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

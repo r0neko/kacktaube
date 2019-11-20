@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using osu.Game.Beatmaps;
 using Pisstaube.Utils;
@@ -42,38 +43,38 @@ namespace Pisstaube.Database.Models
     {
         [Required]
         [Key]
-        [JsonProperty("SetID")]
+        [DataMember(Name = "SetID")]
         public int SetId { get; set; }
 
-        [JsonProperty("ChildrenBeatmaps")] public List<ChildrenBeatmap> ChildrenBeatmaps { get; set; }
+        [DataMember(Name = "ChildrenBeatmaps")] public List<ChildrenBeatmap> ChildrenBeatmaps { get; set; }
 
-        [JsonProperty("RankedStatus")] public BeatmapSetOnlineStatus RankedStatus { get; set; }
+        [DataMember(Name = "RankedStatus")] public BeatmapSetOnlineStatus RankedStatus { get; set; }
 
-        [JsonProperty("ApprovedDate")] public DateTime? ApprovedDate { get; set; }
+        [DataMember(Name = "ApprovedDate")] public DateTime? ApprovedDate { get; set; }
 
-        [JsonProperty("LastUpdate")] public DateTime? LastUpdate { get; set; }
+        [DataMember(Name = "LastUpdate")] public DateTime? LastUpdate { get; set; }
 
-        [JsonProperty("LastChecked")] public DateTime? LastChecked { get; set; }
+        [DataMember(Name = "LastChecked")] public DateTime? LastChecked { get; set; }
 
-        [JsonProperty("Artist")] public string Artist { get; set; }
+        [DataMember(Name = "Artist")] public string Artist { get; set; }
 
-        [JsonProperty("Title")] public string Title { get; set; }
+        [DataMember(Name = "Title")] public string Title { get; set; }
 
-        [JsonProperty("Creator")] public string Creator { get; set; }
+        [DataMember(Name = "Creator")] public string Creator { get; set; }
 
-        [JsonProperty("Source")] public string Source { get; set; }
+        [DataMember(Name = "Source")] public string Source { get; set; }
 
-        [JsonProperty("Tags")] public string Tags { get; set; }
+        [DataMember(Name = "Tags")] public string Tags { get; set; }
 
-        [JsonProperty("HasVideo")] public bool HasVideo { get; set; }
+        [DataMember(Name = "HasVideo")] public bool HasVideo { get; set; }
 
-        [JsonProperty("Genre")] public Genre Genre { get; set; }
+        [DataMember(Name = "Genre")] public Genre Genre { get; set; }
 
-        [JsonProperty("Language")] public Language Language { get; set; }
+        [DataMember(Name = "Language")] public Language Language { get; set; }
 
-        [JsonProperty("Favourites")] public long Favourites { get; set; }
+        [DataMember(Name = "Favourites")] public long Favourites { get; set; }
 
-        [JsonIgnore] public bool Disabled { get; set; }
+        [IgnoreDataMember] public bool Disabled { get; set; }
 
         public static BeatmapSet FromBeatmapSetInfo(BeatmapSetInfo info)
         {

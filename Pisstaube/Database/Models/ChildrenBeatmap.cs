@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using osu.Game.Beatmaps;
 using Pisstaube.Enums;
@@ -13,42 +14,57 @@ namespace Pisstaube.Database.Models
     {
         [Key]
         [Required]
-        [JsonProperty("BeatmapID")]
+        [DataMember(Name = "BeatmapID")]
         public int BeatmapId { get; set; }
 
-        [JsonProperty("ParentSetID")] public int ParentSetId { get; set; }
-
-        [JsonIgnore]
+        [DataMember(Name = "ParentSetID")]
+        public int ParentSetId { get; set; }
+        
+        [IgnoreDataMember]
         [ForeignKey(nameof(ParentSetId))]
         public BeatmapSet Parent { get; set; }
+        
+        [DataMember(Name = "DiffName")]
+        public string DiffName { get; set; }
+        
+        [DataMember(Name = "FileMD5")]
+        public string FileMd5 { get; set; }
 
-        [JsonProperty("DiffName")] public string DiffName { get; set; }
+        [DataMember(Name = "Mode")]
+        public PlayMode Mode { get; set; }
+        
+        [DataMember(Name = "BPM")]
+        public double Bpm { get; set; }
+        
+        [DataMember(Name = "AR")]
+        public float Ar { get; set; }
 
-        [JsonProperty("FileMD5")] public string FileMd5 { get; set; }
+        [DataMember(Name = "OD")]
+        public float Od { get; set; }
 
-        [JsonProperty("Mode")] public PlayMode Mode { get; set; }
+        [DataMember(Name = "CS")]
+        public float Cs { get; set; }
 
-        [JsonProperty("BPM")] public double Bpm { get; set; }
+        [DataMember(Name = "HP")]
+        public float Hp { get; set; }
+        
+        [DataMember(Name = "TotalLength")]
+        public int TotalLength { get; set; }
 
-        [JsonProperty("AR")] public float Ar { get; set; }
+        [DataMember(Name = "HitLength")]
+        public long HitLength { get; set; }
 
-        [JsonProperty("OD")] public float Od { get; set; }
+        [DataMember(Name = "Playcount")]
+        public int Playcount { get; set; }
 
-        [JsonProperty("CS")] public float Cs { get; set; }
+        [DataMember(Name = "Passcount")]
+        public int Passcount { get; set; }
 
-        [JsonProperty("HP")] public float Hp { get; set; }
+        [DataMember(Name = "MaxCombo")]
+        public long MaxCombo { get; set; }
 
-        [JsonProperty("TotalLength")] public int TotalLength { get; set; }
-
-        [JsonProperty("HitLength")] public long HitLength { get; set; }
-
-        [JsonProperty("Playcount")] public int Playcount { get; set; }
-
-        [JsonProperty("Passcount")] public int Passcount { get; set; }
-
-        [JsonProperty("MaxCombo")] public long MaxCombo { get; set; }
-
-        [JsonProperty("DifficultyRating")] public double DifficultyRating { get; set; }
+        [DataMember(Name = "DifficultyRating")]
+        public double DifficultyRating { get; set; }
 
         public static ChildrenBeatmap FromBeatmapInfo(BeatmapInfo info, BeatmapSetOnlineInfo setOnlineInfo,
             BeatmapSet parent = null)

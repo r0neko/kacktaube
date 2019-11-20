@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using osu.Framework.Logging;
@@ -9,6 +10,7 @@ using osu.Game.Beatmaps;
 using Pisstaube.Allocation;
 using Pisstaube.Engine;
 using Pisstaube.Enums;
+using Pisstaube.Utils;
 using StatsdClient;
 
 namespace Pisstaube.Controllers
@@ -92,14 +94,11 @@ namespace Pisstaube.Controllers
 
             DogStatsd.Increment("beatmap.searches");
 
-            if (result?.Count == 0) result = null; // Cheesegull logic ^^,
+            if (result?.Count() == 0) result = null; // Cheesegull logic ^^,
 
             if (!raw)
             {
-                ca = JsonConvert.SerializeObject(result, Formatting.None, new JsonSerializerSettings
-                {
-                    FloatFormatHandling = FloatFormatHandling.DefaultValue
-                });
+                ca = JsonUtil.Serialize(result);
             }
             else
             {
@@ -112,7 +111,7 @@ namespace Pisstaube.Controllers
 
                 ca = string.Empty;
 
-                ca += result.Count >= 100 ? "101" : result.Count.ToString();
+                ca += result.Count() >= 100 ? "101" : result.Count().ToString();
 
                 ca += "\n";
 

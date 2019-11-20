@@ -126,16 +126,16 @@ namespace Pisstaube.Engine
             ));
         }
 
-        public List<BeatmapSet> Search(string query,
-            int amount = 100,
+        public IEnumerable<BeatmapSet> Search(string query,
+            int amount = 50,
             int offset = 0,
             BeatmapSetOnlineStatus? rankedStatus = null,
             PlayMode mode = PlayMode.All)
         {
-            if (amount > 100 || amount <= -1)
-                amount = 100;
+            if (amount > 50 || amount <= -1)
+                amount = 50;
 
-            var sets = new List<BeatmapSet>();
+            IEnumerable<BeatmapSet> sets = new List<BeatmapSet>();
 
             if (!string.IsNullOrWhiteSpace(query))
             {
@@ -199,7 +199,7 @@ namespace Pisstaube.Engine
                         ? _contextFactory.Get().BeatmapSet.FirstOrDefault(set => set.SetId == hit.Source.Id)
                         : null
                 );
-                sets.AddRange(r);
+                sets = r;
 
                 var newSets = new List<BeatmapSet>();
 
@@ -216,7 +216,7 @@ namespace Pisstaube.Engine
             else
             {
                 var ctx = _contextFactory.Get();
-                var sSets = ctx.BeatmapSet
+                var xSets = ctx.BeatmapSet
                     .Where(
                         set => (
                                    rankedStatus == null || set.RankedStatus == rankedStatus
@@ -233,7 +233,7 @@ namespace Pisstaube.Engine
                     .Take(amount)
                     .Include(at => at.ChildrenBeatmaps);
                 
-                sets = sSets.ToList();
+                sets = xSets;
             }
 
             foreach (var s in sets)

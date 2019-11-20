@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
+using Pisstaube.Utils;
 using StatsdClient;
 
 namespace Pisstaube.Controllers
@@ -33,8 +34,7 @@ namespace Pisstaube.Controllers
 
             var raw = Request.Query.ContainsKey("raw");
             if (!raw)
-                return JsonConvert.SerializeObject(_contextFactory.Get().Beatmaps
-                    .FirstOrDefault(cb => cb.BeatmapId == beatmapId));
+                return JsonUtil.Serialize(_contextFactory.Get().Beatmaps.FirstOrDefault(cb => cb.BeatmapId == beatmapId));
 
             var set = _contextFactory.Get().Beatmaps.Where(bm => bm.BeatmapId == beatmapId).Select(
                 bm => _contextFactory
@@ -74,7 +74,7 @@ namespace Pisstaube.Controllers
                 var bms = beatmapIds.Split(";");
                 var bmIds = Array.ConvertAll(bms, int.Parse);
 
-                return JsonConvert.SerializeObject(
+                return JsonUtil.Serialize(
                     _contextFactory.Get().Beatmaps
                         .Where(cb => bmIds.Any(x => cb.BeatmapId == x)));
             }
@@ -100,7 +100,7 @@ namespace Pisstaube.Controllers
             DogStatsd.Increment("beatmap.set.request");
 
             if (!raw)
-                return JsonConvert.SerializeObject(set);
+                return JsonUtil.Serialize(set);
 
             if (set == null)
                 return "0";
@@ -135,7 +135,7 @@ namespace Pisstaube.Controllers
                 var bms = beatmapSetIds.Split(";");
                 var bmsIds = Array.ConvertAll(bms, int.Parse);
 
-                return JsonConvert.SerializeObject(
+                return JsonUtil.Serialize(
                     _contextFactory.Get().BeatmapSet.Where(set => bmsIds.Any(s => set.SetId == s))
                         .Include(x => x.ChildrenBeatmaps)
                 );
@@ -175,7 +175,7 @@ namespace Pisstaube.Controllers
                 select p
             ).Include(s => s.ChildrenBeatmaps);
 
-            return JsonConvert.SerializeObject(bms);
+            return JsonUtil.Serialize(bms);
         }
     }
 }

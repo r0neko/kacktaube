@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
 using osu.Game.Online.API;
@@ -11,6 +10,7 @@ using osu.Game.Scoring.Legacy;
 using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Online;
+using Pisstaube.Utils;
 
 namespace Pisstaube.Controllers
 {
@@ -145,7 +145,61 @@ namespace Pisstaube.Controllers
             }
             
             if (ipfs && r.IPFSHash != "")
-                return Ok(JsonConvert.SerializeObject(new
+                return Ok(JsonUtil.Serialize(new
+                {
+                    Name = r.File,
+                    Hash = r.IPFSHash
+                }));
+            
+            if (r.FileStream != null)
+                return File (r.FileStream,
+                    "application/octet-stream",
+                    r.File);
+
+            return Ok("Failed to open stream!");
+        }
+        
+        /*
+         * People started to Reverse proxy /d/* to this Server, so we should take advantage of that and give the osu! Client a NoVideo option
+         * WITHOUT ?novideo as the osu!client handles downloads like /d/{id}{novid ? n : ""}?us=.....&ha=.....
+         */
+        // GET /d/:SetId
+        [HttpGet("d/{beatmapSetId:int}n")]
+        public ActionResult GetSetNoVid(int beatmapSetId, bool ipfs = false)
+        {
+            if (_apiAccess.State == APIState.Offline)
+            {
+                Logger.Error(new NotSupportedException("API is not Authenticated!"),
+                    "API is not Authenticated! check your Login Details!",
+                    LoggingTarget.Network);
+
+                return StatusCode(503, "Osu! API is not available.");
+            }
+
+            SetDownloader.DownloadMapResponse r;
+            try
+            {
+                r = _setDownloader.DownloadMap(beatmapSetId, false, ipfs);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return StatusCode(503, "Osu! API is not available.");
+            }
+            catch (LegacyScoreParser.BeatmapNotFoundException)
+            {
+                return StatusCode(404, "Beatmap not Found!");
+            }
+            catch (IOException)
+            {
+                return StatusCode(500, "Storage Full!");
+            }
+            catch (NotSupportedException)
+            {
+                return StatusCode(404, "Beatmap got DMCA'd!");
+            }
+            
+            if (ipfs && r.IPFSHash != "")
+                return Ok(JsonUtil.Serialize(new
                 {
                     Name = r.File,
                     Hash = r.IPFSHash
