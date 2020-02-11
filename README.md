@@ -22,9 +22,10 @@ you'll need Prior knowledge in C# and .NET Core 3 if you want to use this Beatma
 
 the easiest way would be docker i guess, simply run those commands (!WARNING! DO NOT RUN UNTRUSTED COMMANDS IF YOU DON'T KNOW WHAT THEY DO!):
 ```console
-~$ git clone https://github.com/Pisstaube/pisstaube.git
-~$ cd pisstaube
-~$ docker-compose up --build -d
+:~$ git clone https://github.com/Pisstaube/pisstaube.git
+:~$ cd pisstaube
+:~$ cp docker.env.example docker.env # PLEASE EDIT YOUR docker.env! as it's our config file
+:~$ docker-compose up --build -d
 ```
 
 i do not recommend setting it up though,
