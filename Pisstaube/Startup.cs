@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using osu.Framework.Development;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
@@ -178,6 +180,12 @@ namespace Pisstaube
             
             if (GlobalConfig.EnableUpdating)
                 houseKeeper.Start();
+            
+            app.UseFileServer(new FileServerOptions
+            {
+                FileProvider = new PhysicalFileProvider(Path.Join(Directory.GetCurrentDirectory(), "data/wwwroot")),
+                EnableDirectoryBrowsing = true,
+            });
 
             app.UseMvc(routes => routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}"));
         }
