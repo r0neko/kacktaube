@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
 
-namespace Pisstaube.Controllers.cheesegull
+namespace Pisstaube.Controllers.v1
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [ApiController]
     public class HashController : ControllerBase
     {
@@ -15,11 +15,11 @@ namespace Pisstaube.Controllers.cheesegull
 
         public HashController(PisstaubeDbContext dbContext) => this.dbContext = dbContext;
 
-        // GET /api/hash
+        // GET /api/v1/hash
         [HttpGet]
         public ActionResult<List<BeatmapSet>> Get() => null;
 
-        // GET /api/hash/:FileMd5
+        // GET /api/v1/hash/:FileMd5
         [HttpGet("{hash}")]
         public ActionResult<BeatmapSet> Get(string hash)
         {
@@ -32,7 +32,7 @@ namespace Pisstaube.Controllers.cheesegull
                 if (set == null)
                     return null;
 
-                set.ChildrenBeatmaps =dbContext.Beatmaps.Where(cb => cb.ParentSetId == set.SetId).ToList();
+                set.ChildrenBeatmaps = dbContext.Beatmaps.Where(cb => cb.ParentSetId == set.SetId).ToList();
                 return set;
             }
         }

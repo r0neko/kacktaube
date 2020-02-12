@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using osu.Framework.Development;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
@@ -94,8 +93,12 @@ namespace Pisstaube
 
         [UsedImplicitly]
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
-            ICrawler crawler, IAPIProvider apiProvider, DatabaseHouseKeeper houseKeeper)
+            ICrawler crawler, IAPIProvider apiProvider, DatabaseHouseKeeper houseKeeper,
+            PisstaubeCacheDbContextFactory cacheDbContextFactory)
         {
+            cacheDbContextFactory.Get().Migrate();
+            _osuContextFactory.Get().Migrate();
+
             Logger.Enabled = true;
             Logger.Level = LogLevel.Debug;
             Logger.GameIdentifier = "Pisstaube";

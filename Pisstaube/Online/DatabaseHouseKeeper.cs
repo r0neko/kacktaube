@@ -16,17 +16,8 @@ namespace Pisstaube.Online
         private readonly IAPIProvider apiProvider;
         private readonly PisstaubeDbContext dbContext;
         private readonly IBeatmapSearchEngineProvider searchEngine;
-
-        public DatabaseHouseKeeper(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider, PisstaubeDbContext dbContext, IBeatmapSearchEngineProvider searchEngine) :
-            base(storage, requestLimiter, apiProvider, dbContext, searchEngine)
-        {
-            this.requestLimiter = requestLimiter;
-            this.apiProvider = apiProvider;
-            this.dbContext = dbContext;
-            this.searchEngine = searchEngine;
-        }
         
-        protected async override void ThreadWorker()
+        protected override void ThreadWorker()
         {
             while (!CancellationToken.IsCancellationRequested)
             {
@@ -70,6 +61,14 @@ namespace Pisstaube.Online
                     Tasks.Add(Crawl(beatmap.SetId));
                 }
             }
+        }
+
+        public DatabaseHouseKeeper(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider, PisstaubeDbContext dbContext, IBeatmapSearchEngineProvider searchEngine, BeatmapDownloader beatmapDownloader) : base(storage, requestLimiter, apiProvider, dbContext, searchEngine, beatmapDownloader)
+        {
+            this.requestLimiter = requestLimiter;
+            this.apiProvider = apiProvider;
+            this.dbContext = dbContext;
+            this.searchEngine = searchEngine;
         }
     }
 }

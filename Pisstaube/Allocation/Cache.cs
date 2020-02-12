@@ -8,9 +8,7 @@ namespace Pisstaube.Allocation
         private readonly IMemoryCache memoryCache;
 
         public Cache(IMemoryCache memoryCache) => this.memoryCache = memoryCache;
-
-        public static Cache New() => new Cache(new MemoryCache(new MemoryCacheOptions()));
-
+        
         public void Set<T>(object key, T value, TimeSpan duration)
         {
             var cacheEntryOptions = new MemoryCacheEntryOptions()

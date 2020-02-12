@@ -20,8 +20,4 @@
       <PackageReference Include="Utf8Json" Version="1.3.7" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Controllers\v1" />
-    </ItemGroup>
-
 </Project>

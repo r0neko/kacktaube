@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
@@ -19,7 +18,6 @@ namespace Pisstaube.Controllers
     public class IndexController : ControllerBase
     {
         private readonly IAPIProvider apiProvider;
-        private readonly Storage storage;
         private readonly Storage fileStorage;
         private readonly PisstaubeDbContext dbContext;
         private readonly object dbContextLock = new object();
@@ -35,7 +33,6 @@ namespace Pisstaube.Controllers
             PisstaubeDbContext dbContext)
         {
             this.apiProvider = apiProvider;
-            this.storage = storage;
             this.cache = cache;
             this.downloader = downloader;
             this.setDownloader = setDownloader;
@@ -47,26 +44,29 @@ namespace Pisstaube.Controllers
         [HttpGet("osu/{beatmapId:int}")]
         public ActionResult GetBeatmap(int beatmapId)
         {
-            var hash = cache.Get().CacheBeatmaps.Where(bm => bm.BeatmapId == beatmapId).Select(bm => bm.Hash)
+            var hash = cache.Get()
+                    .CacheBeatmaps.Where(bm => bm.BeatmapId == beatmapId)
+                    .Select(bm => bm.Hash)
                 .FirstOrDefault();
 
+            osu.Game.IO.FileInfo info = null;
             if (hash == null)
                 lock (dbContextLock)
                 {
                     foreach (var map in dbContext.Beatmaps.Where(bm => bm.BeatmapId == beatmapId))
                     {
-                        var fileInfo = downloader.Download(map);
+                        var (fileInfo, fileMd5) = downloader.Download(map);
 
-                        map.FileMd5 = cache.Get()
-                            .CacheBeatmaps
-                            .Where(cmap => cmap.Hash == fileInfo.Hash)
-                            .Select(cmap => cmap.FileMd5)
-                            .FirstOrDefault();
+                        map.FileMd5 = fileMd5;
+
+                        info = fileInfo;
                     }
                 }
-
-
-            var info = new osu.Game.IO.FileInfo {Hash = hash};
+            else
+                info = new osu.Game.IO.FileInfo {Hash = hash};
+            
+            if (info == null)
+                return NotFound("Beatmap not Found!");
 
             return File(fileStorage.GetStream(info.StoragePath), "application/octet-stream", hash);
         }
@@ -75,29 +75,30 @@ namespace Pisstaube.Controllers
         [HttpGet("osu/{fileMd5}")]
         public ActionResult GetBeatmap(string fileMd5)
         {
-            var hash = cache.Get().CacheBeatmaps.Where(bm => bm.FileMd5 == fileMd5).Select(bm => bm.Hash)
+            var hash = cache.Get()
+                .CacheBeatmaps
+                .Where(bm => bm.FileMd5 == fileMd5)
+                .Select(bm => bm.Hash)
                 .FirstOrDefault();
 
+            osu.Game.IO.FileInfo info = null;
             if (hash == null)
                 lock (dbContextLock)
                 {
                     foreach (var map in dbContext.Beatmaps.Where(bm => bm.FileMd5 == fileMd5))
                     {
-                        var fileInfo = downloader.Download(map);
+                        var (fileInfo, pFileMd5) = downloader.Download(map);
 
-                        map.FileMd5 = cache.Get()
-                            .CacheBeatmaps
-                            .Where(cMap => cMap.Hash == fileInfo.Hash)
-                            .Select(cMap => cMap.FileMd5)
-                            .FirstOrDefault();
-
-                        hash = fileInfo.Hash;
+                        map.FileMd5 = pFileMd5;
+                        info = fileInfo;
                     }
                 }
+            else
+                info = new osu.Game.IO.FileInfo {Hash = hash};
 
-
-            var info = new osu.Game.IO.FileInfo {Hash = hash};
-
+            if (info == null)
+                return NotFound("Beatmap not Found!");
+            
             return File(fileStorage.GetStream(info.StoragePath), "application/octet-stream", hash);
         }
 

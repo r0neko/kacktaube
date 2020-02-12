@@ -28,7 +28,7 @@ namespace Pisstaube.Online
             _tmpStorage = dataStorage.GetStorageForDirectory("tmp");
         }
 
-        public FileInfo Download(ChildrenBeatmap beatmap)
+        public (FileInfo, string) Download(ChildrenBeatmap beatmap)
         {
             var req = new FileWebRequest(
                 _tmpStorage.GetFullPath(beatmap.BeatmapId.ToString(), true),
@@ -38,23 +38,25 @@ namespace Pisstaube.Online
 
             req.Perform();
 
+            string fileMd5;
             FileInfo info;
             using (var f = _tmpStorage.GetStream(beatmap.BeatmapId.ToString(), FileAccess.Read, FileMode.Open))
             {
                 using var db = _cache.GetForWrite();
                 info = _store.Add(f);
 
+                fileMd5 = f.ComputeMD5Hash();
                 if (db.Context.CacheBeatmaps.Any(bm => bm.BeatmapId == beatmap.BeatmapId))
                     db.Context.CacheBeatmaps.Update(new Beatmap
-                        {BeatmapId = beatmap.BeatmapId, Hash = info.Hash, FileMd5 = f.ComputeMD5Hash()});
+                        {BeatmapId = beatmap.BeatmapId, Hash = info.Hash, FileMd5 = fileMd5});
                 else
                     db.Context.CacheBeatmaps.Add(new Beatmap
-                        {BeatmapId = beatmap.BeatmapId, Hash = info.Hash, FileMd5 = f.ComputeMD5Hash()});
+                        {BeatmapId = beatmap.BeatmapId, Hash = info.Hash, FileMd5 = fileMd5});
             }
 
             _tmpStorage.Delete(beatmap.BeatmapId.ToString());
 
-            return info;
+            return (info, fileMd5);
         }
     }
 }

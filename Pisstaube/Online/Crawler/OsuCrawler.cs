@@ -23,6 +23,7 @@ namespace Pisstaube.Online.Crawler
     public class OsuCrawler : ICrawler, IDisposable
     {
         private readonly Storage storage;
+        private readonly BeatmapDownloader beatmapDownloader;
         private object DbContextMutex { get; } = new object();
         private PisstaubeDbContext DbContext { get; }
         private IBeatmapSearchEngineProvider SearchEngine { get; }
@@ -38,9 +39,11 @@ namespace Pisstaube.Online.Crawler
         protected List<Task> Tasks { get; } = new List<Task>();
         protected CancellationToken CancellationToken { get; private set; }
         
-        public OsuCrawler(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider, PisstaubeDbContext dbContext, IBeatmapSearchEngineProvider searchEngine)
+        public OsuCrawler(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider, PisstaubeDbContext dbContext,
+            IBeatmapSearchEngineProvider searchEngine, BeatmapDownloader beatmapDownloader)
         {
             this.storage = storage;
+            this.beatmapDownloader = beatmapDownloader;
             DbContext = dbContext;
             SearchEngine = searchEngine;
             ApiProvider = apiProvider;
@@ -107,6 +110,17 @@ namespace Pisstaube.Online.Crawler
 
                 lock (DbContextMutex)
                 {
+                    foreach (var childrenBeatmap in beatmapSet.ChildrenBeatmaps)
+                    {
+                        var fileInfo = beatmapDownloader.Download(childrenBeatmap);
+
+                        childrenBeatmap.FileMd5 = fileInfo.Item2;
+                        
+                        if (DbContext.Entry(childrenBeatmap).State == EntityState.Detached)
+                            DbContext.Set<ChildrenBeatmap>().Add(childrenBeatmap);
+                    }
+                    
+                    
                     if (DbContext.Entry(beatmapSet).State == EntityState.Detached)
                         DbContext.Set<BeatmapSet>().Add(beatmapSet);
     
