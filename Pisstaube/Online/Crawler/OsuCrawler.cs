@@ -39,12 +39,12 @@ namespace Pisstaube.Online.Crawler
         protected List<Task> Tasks { get; } = new List<Task>();
         protected CancellationToken CancellationToken { get; private set; }
         
-        public OsuCrawler(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider, PisstaubeDbContext dbContext,
+        public OsuCrawler(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider,
             IBeatmapSearchEngineProvider searchEngine, BeatmapDownloader beatmapDownloader)
         {
             this.storage = storage;
             this.beatmapDownloader = beatmapDownloader;
-            DbContext = dbContext;
+            DbContext = new PisstaubeDbContext();
             SearchEngine = searchEngine;
             ApiProvider = apiProvider;
             RequestLimiter = requestLimiter;
@@ -116,15 +116,26 @@ namespace Pisstaube.Online.Crawler
                         var fileInfo = beatmapDownloader.Download(childrenBeatmap);
 
                         childrenBeatmap.FileMd5 = fileInfo.Item2;
-                        
-                        if (DbContext.Entry(childrenBeatmap).State == EntityState.Detached)
-                            DbContext.Set<ChildrenBeatmap>().Add(childrenBeatmap);
                     }
                     
+                    var local = DbContext.Set<BeatmapSet>()
+                        .Local
+                        .FirstOrDefault(entry => entry.SetId.Equals(beatmapSet.SetId));
+                    
+                    if (local != null)
+                    {
+                        // detach
+                        DbContext.Entry(local).State = EntityState.Detached;
+
+                        DbContext.Set<BeatmapSet>().Update(beatmapSet);
+                    }
+                    
+                    if (DbContext.BeatmapSet.Contains(beatmapSet))
+                        DbContext.Set<BeatmapSet>().Update(beatmapSet);
                     
                     if (DbContext.Entry(beatmapSet).State == EntityState.Detached)
                         DbContext.Set<BeatmapSet>().Add(beatmapSet);
-    
+
                     DbContext.SaveChanges();
                 }
 
@@ -140,6 +151,7 @@ namespace Pisstaube.Online.Crawler
             } 
             catch (Exception e) // Everything else, redo the Crawl.
             {
+                DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 Logger.Error(e, "Unknown error during crawling occured!");
 
                 if (ErrorCount > 1024)

@@ -66,11 +66,11 @@ namespace Pisstaube.Online
             }
         }
 
-        public DatabaseHouseKeeper(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider, PisstaubeDbContext dbContext, IBeatmapSearchEngineProvider searchEngine, BeatmapDownloader beatmapDownloader) : base(storage, requestLimiter, apiProvider, dbContext, searchEngine, beatmapDownloader)
+        public DatabaseHouseKeeper(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider, IBeatmapSearchEngineProvider searchEngine, BeatmapDownloader beatmapDownloader) : base(storage, requestLimiter, apiProvider, searchEngine, beatmapDownloader)
         {
             this.requestLimiter = requestLimiter;
             this.apiProvider = apiProvider;
-            this.dbContext = dbContext;
+            this.dbContext = new PisstaubeDbContext();
             this.searchEngine = searchEngine;
         }
     }

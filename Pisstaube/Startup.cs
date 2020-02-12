@@ -74,7 +74,6 @@ namespace Pisstaube
             builder.RegisterInstance(_osuContextFactory).As<IDatabaseContextFactory>();
             builder.RegisterType<FileStore>();
             builder.RegisterType<PisstaubeDbContext>().InstancePerDependency();
-            builder.RegisterType<PisstaubeDbContext>().InstancePerDependency();
             builder.RegisterType<PisstaubeCacheDbContextFactory>().AsSelf();
             builder.RegisterType<SetDownloader>().AsSelf();
             builder.RegisterType<SmartStorage>().AsSelf();
