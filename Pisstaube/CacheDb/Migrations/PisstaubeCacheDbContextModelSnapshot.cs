@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 namespace Pisstaube.CacheDb.Migrations
 {
     [DbContext(typeof(PisstaubeCacheDbContext))]
-    internal partial class PisstaubeCacheDbContextModelSnapshot : ModelSnapshot
+    internal class PisstaubeCacheDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {

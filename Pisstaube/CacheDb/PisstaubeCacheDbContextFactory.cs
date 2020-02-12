@@ -6,7 +6,7 @@ using osu.Framework.Platform;
 namespace Pisstaube.CacheDb
 {
     // Copy paste of https://github.com/ppy/osu/blob/master/osu.Game/Database/DatabaseContextFactory.cs
-    public class PisstaubeCacheDbContextFactory
+    public sealed class PisstaubeCacheDbContextFactory
     {
         private readonly Storage _storage;
 
@@ -102,7 +102,7 @@ namespace Pisstaube.CacheDb
             _threadContexts = new ThreadLocal<PisstaubeCacheDbContext>(CreateContext, true);
         }
 
-        protected virtual PisstaubeCacheDbContext CreateContext() =>
+        private PisstaubeCacheDbContext CreateContext() =>
             new PisstaubeCacheDbContext(_storage.GetDatabaseConnectionString(DatabaseName))
             {
                 Database = {AutoTransactionsEnabled = false}

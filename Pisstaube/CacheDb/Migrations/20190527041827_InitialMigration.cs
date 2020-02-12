@@ -11,10 +11,10 @@ namespace Pisstaube.CacheDb.Migrations
                 "CacheBeatmapSet",
                 table => new
                 {
-                    SetId = table.Column<int>(nullable: false)
+                    SetId = table.Column<int>()
                         .Annotation("Sqlite:Autoincrement", true),
-                    DownloadCount = table.Column<long>(nullable: false),
-                    LastDownload = table.Column<DateTime>(nullable: false)
+                    DownloadCount = table.Column<long>(),
+                    LastDownload = table.Column<DateTime>()
                 },
                 constraints: table => { table.PrimaryKey("PK_CacheBeatmapSet", x => x.SetId); });
         }

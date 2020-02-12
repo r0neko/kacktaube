@@ -14,9 +14,9 @@ namespace Pisstaube.Database.Migrations
                 "BeatmapSet",
                 table => new
                 {
-                    SetId = table.Column<int>(nullable: false)
+                    SetId = table.Column<int>()
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    RankedStatus = table.Column<int>(nullable: false),
+                    RankedStatus = table.Column<int>(),
                     ApprovedDate = table.Column<DateTime>(nullable: true),
                     LastUpdate = table.Column<DateTime>(nullable: true),
                     LastChecked = table.Column<DateTime>(nullable: true),
@@ -25,10 +25,10 @@ namespace Pisstaube.Database.Migrations
                     Creator = table.Column<string>(nullable: true),
                     Source = table.Column<string>(nullable: true),
                     Tags = table.Column<string>(nullable: true),
-                    HasVideo = table.Column<bool>(nullable: false),
-                    Genre = table.Column<int>(nullable: false),
-                    Language = table.Column<int>(nullable: false),
-                    Favourites = table.Column<long>(nullable: false)
+                    HasVideo = table.Column<bool>(),
+                    Genre = table.Column<int>(),
+                    Language = table.Column<int>(),
+                    Favourites = table.Column<long>()
                 },
                 constraints: table => { table.PrimaryKey("PK_BeatmapSet", x => x.SetId); });
 
@@ -36,23 +36,23 @@ namespace Pisstaube.Database.Migrations
                 "Beatmaps",
                 table => new
                 {
-                    BeatmapId = table.Column<int>(nullable: false)
+                    BeatmapId = table.Column<int>()
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    ParentSetId = table.Column<int>(nullable: false),
+                    ParentSetId = table.Column<int>(),
                     DiffName = table.Column<string>(nullable: true),
                     FileMd5 = table.Column<string>(nullable: true),
-                    Mode = table.Column<int>(nullable: false),
-                    Bpm = table.Column<float>(nullable: false),
-                    Ar = table.Column<float>(nullable: false),
-                    Od = table.Column<float>(nullable: false),
-                    Cs = table.Column<float>(nullable: false),
-                    Hp = table.Column<float>(nullable: false),
-                    TotalLength = table.Column<int>(nullable: false),
-                    HitLength = table.Column<long>(nullable: false),
-                    Playcount = table.Column<int>(nullable: false),
-                    Passcount = table.Column<int>(nullable: false),
-                    MaxCombo = table.Column<long>(nullable: false),
-                    DifficultyRating = table.Column<double>(nullable: false)
+                    Mode = table.Column<int>(),
+                    Bpm = table.Column<float>(),
+                    Ar = table.Column<float>(),
+                    Od = table.Column<float>(),
+                    Cs = table.Column<float>(),
+                    Hp = table.Column<float>(),
+                    TotalLength = table.Column<int>(),
+                    HitLength = table.Column<long>(),
+                    Playcount = table.Column<int>(),
+                    Passcount = table.Column<int>(),
+                    MaxCombo = table.Column<long>(),
+                    DifficultyRating = table.Column<double>()
                 },
                 constraints: table =>
                 {

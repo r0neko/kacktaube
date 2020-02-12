@@ -150,9 +150,8 @@ namespace Pisstaube.Controllers.cheesegull
             }
         }
         
-        // GET /api/f/:Beatmap File Name
+        // GET /api/cheesegull/f/:Beatmap File Name
         [HttpGet("f/{bmfileName}")]
-        [HttpGet("/f/{bmfileName}")]
         public async Task<ActionResult<string>> GetBeatmapSetByFile(string bmFileName)
         {
             DogStatsd.Increment("beatmap.file.request");

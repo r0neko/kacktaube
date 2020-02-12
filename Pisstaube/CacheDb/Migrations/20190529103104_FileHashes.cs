@@ -15,7 +15,7 @@ namespace Pisstaube.CacheDb.Migrations
                 "CacheBeatmaps",
                 table => new
                 {
-                    BeatmapId = table.Column<int>(nullable: false)
+                    BeatmapId = table.Column<int>()
                         .Annotation("Sqlite:Autoincrement", true),
                     Hash = table.Column<string>(nullable: true),
                     FileMd5 = table.Column<string>(nullable: true)
