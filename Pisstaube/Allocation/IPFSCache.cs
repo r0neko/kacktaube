@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Ipfs.Http;
+using osu.Framework.Logging;
 using osu.Framework.Platform; 
  
 namespace Pisstaube.Allocation 
@@ -23,8 +24,9 @@ namespace Pisstaube.Allocation
              
                 return fileInfo?.Id.Hash.ToBase58(); 
             } 
-            catch 
+            catch (Exception ex)
             { 
+                Logger.Error(ex, "Failed to upload file to interplanetary FileSystem (IPFS)");
                 return ""; 
             } 
         } 

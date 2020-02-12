@@ -130,31 +130,13 @@ namespace Pisstaube.Online
                     db.Context.CacheBeatmapSet.Update(cachedMap);
                 }
 
-                /*
-                catch (ObjectDisposedException)
-                {
-                    // Cannot access a closed file.
-                    // Beatmap got DMCA'd
-
-                    _search.DeleteBeatmap(beatmapSetId);
-
-                    using (var db = _factory.GetForWrite())
-                    {
-                        set.Disabled = true;
-                        db.Context.BeatmapSet.Update(set);
-                    }
-
-                    throw new NotSupportedException("Beatmap got DMCA'd");
-                }
-                */
-
                 //DogStatsd.Increment("beatmap.downloads");
 
                 var cac = ipfsCache.CacheFile("cache/" + bmFileId);
                 
                 return new DownloadMapResponse {
                     File = $"{set.SetId} {set.Artist} - {set.Title}.osz",
-                    FileStream = !ipfs && cac.Result == "" ? cacheStorage.GetStream (bmFileId) : null, // Don't even bother opening a stream.
+                    FileStream = !ipfs || cac.Result == "" ? cacheStorage.GetStream (bmFileId, FileAccess.Read, FileMode.Open) : null, // Don't even bother opening a stream.
                     IPFSHash = cac.Result,
                 };
             }
@@ -182,7 +164,7 @@ namespace Pisstaube.Online
             
             return new DownloadMapResponse {
                 File = $"{set.SetId} {set.Artist} - {set.Title}.osz",
-                FileStream = !ipfs && cache.Result == "" ? cacheStorage.GetStream (bmFileId) : null, // Don't even bother opening a stream.
+                FileStream = !ipfs || cache.Result == "" ? cacheStorage.GetStream (bmFileId, FileAccess.Read, FileMode.Open) : null, // Don't even bother opening a stream.
                 IPFSHash = cache.Result,
             };
         }
