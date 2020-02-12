@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using osu.Framework.Platform;
 using osu.Game.Beatmaps;
 using osu.Game.Online.API;
@@ -60,6 +61,8 @@ namespace Pisstaube.Online
                     
                     Tasks.Add(Crawl(beatmap.SetId));
                 }
+                
+                Thread.Sleep(TimeSpan.FromHours(8)); // Update every 8 hours...
             }
         }
 

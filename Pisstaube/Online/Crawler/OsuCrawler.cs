@@ -82,6 +82,7 @@ namespace Pisstaube.Online.Crawler
             workingThread.Join();
         }
 
+        private int ErrorCount = 0;
         public virtual async Task<bool> Crawl(int id)
         {
             Logger.LogPrint($"Crawling BeatmapId {LatestId}...", LoggingTarget.Network, LogLevel.Debug);
@@ -129,24 +130,38 @@ namespace Pisstaube.Online.Crawler
 
                 SearchEngine.Index(new []{ beatmapSet });
 
+                ErrorCount = 0;
                 return true;
             }
             catch (WebException) // Don't worry about WebException exceptions, we can safely ignore those.
             {
+                ErrorCount++;
                 return false;
             } 
             catch (Exception e) // Everything else, redo the Crawl.
             {
                 Logger.Error(e, "Unknown error during crawling occured!");
-                
+
+                if (ErrorCount > 1024)
+                {
+                    Logger.LogPrint("Error count too high! canceling crawl...", LoggingTarget.Network, LogLevel.Important);
+                    return false;
+                }
+
+                ErrorCount++;
                 return await Crawl(id);
             }
         }
-
+        
         protected virtual void ThreadWorker()
         {
             while (!CancellationToken.IsCancellationRequested)
             {
+                if (ErrorCount > 1024)
+                {
+                    Logger.LogPrint("Error count too high! will continue tomorrow...", LoggingTarget.Network, LogLevel.Important);
+                    Thread.Sleep(TimeSpan.FromDays(1));
+                }
                 if (Tasks.Count > 32) {
                     foreach (var task in Tasks) // wait for all tasks
                     {
