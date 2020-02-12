@@ -47,8 +47,7 @@ namespace Pisstaube
         {
             services.AddOptions();
             services.AddRouting();
-            services.AddHealthChecks();
-            
+
             services
                 .AddMvc(
                     options =>
