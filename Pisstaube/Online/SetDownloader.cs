@@ -23,18 +23,18 @@ namespace Pisstaube.Online
         {
             public string File;
             public Stream FileStream;
-            public string IPFSHash;
+            public string IpfsHash;
         }
 
-        private readonly Storage storage;
-        private readonly IAPIProvider apiProvider;
-        private readonly PisstaubeDbContext dbContext;
-        private readonly object dbContextMutes = new object();
-        private readonly PisstaubeCacheDbContextFactory cacheFactory;
-        private readonly SmartStorage smartStorage;
-        private readonly RequestLimiter limiter;
-        private readonly IBeatmapSearchEngineProvider search;
-        private readonly IpfsCache ipfsCache;
+        private readonly Storage _storage;
+        private readonly IAPIProvider _apiProvider;
+        private readonly PisstaubeDbContext _dbContext;
+        private readonly object _dbContextMutes = new object();
+        private readonly PisstaubeCacheDbContextFactory _cacheFactory;
+        private readonly SmartStorage _smartStorage;
+        private readonly RequestLimiter _limiter;
+        private readonly IBeatmapSearchEngineProvider _search;
+        private readonly IpfsCache _ipfsCache;
 
         public SetDownloader(Storage storage,
             IAPIProvider apiProvider,
@@ -46,19 +46,19 @@ namespace Pisstaube.Online
             IpfsCache ipfsCache
         )
         {
-            this.storage = storage;
-            this.apiProvider = apiProvider;
-            this.dbContext = dbContext;
-            this.cacheFactory = cacheFactory;
-            this.smartStorage = smartStorage;
-            this.limiter = limiter;
-            this.search = search;
-            this.ipfsCache = ipfsCache;
+            this._storage = storage;
+            this._apiProvider = apiProvider;
+            this._dbContext = dbContext;
+            this._cacheFactory = cacheFactory;
+            this._smartStorage = smartStorage;
+            this._limiter = limiter;
+            this._search = search;
+            this._ipfsCache = ipfsCache;
         }
 
         public DownloadMapResponse DownloadMap(int beatmapSetId, bool dlVideo = false, bool ipfs = false)
         {
-            if (apiProvider.State == APIState.Offline)
+            if (_apiProvider.State == APIState.Offline)
             {
                 Logger.Error(new NotSupportedException("API is not Authenticated!"),
                     "API is not Authenticated! check your Login Details!",
@@ -67,24 +67,24 @@ namespace Pisstaube.Online
                 throw new UnauthorizedAccessException("API Is not Authorized!");
             }
 
-            if (!storage.ExistsDirectory("cache"))
-                storage.GetFullPath("cache", true);
+            if (!_storage.ExistsDirectory("cache"))
+                _storage.GetFullPath("cache", true);
 
             BeatmapSet set;
-            lock (dbContextMutes)
+            lock (_dbContextMutes)
             {
-                if ((set = dbContext.BeatmapSet
+                if ((set = _dbContext.BeatmapSet
                         .FirstOrDefault(bmSet => bmSet.SetId == beatmapSetId && !bmSet.Disabled)) == null)
                     throw new LegacyScoreParser.BeatmapNotFoundException();
             }
                 
-            var cacheStorage = storage.GetStorageForDirectory("cache");
+            var cacheStorage = _storage.GetStorageForDirectory("cache");
             var bmFileId = beatmapSetId.ToString("x8") + (dlVideo ? "" : "_novid");
 
             CacheBeatmapSet cachedMap;
             if (!cacheStorage.Exists(bmFileId))
             {
-                if (!smartStorage.FreeStorage())
+                if (!_smartStorage.FreeStorage())
                 {
                     Logger.Error(new Exception("Cache Storage is full!"),
                         "Please change the Cleaner Settings!",
@@ -100,8 +100,8 @@ namespace Pisstaube.Online
 
                 var tmpFile = string.Empty;
                 req.Success += c => tmpFile = c;
-                limiter.Limit();
-                req.Perform(apiProvider);
+                _limiter.Limit();
+                req.Perform(_apiProvider);
 
                 using (var f = cacheStorage.GetStream(bmFileId, FileAccess.Write))
                 {
@@ -109,10 +109,10 @@ namespace Pisstaube.Online
                     readStream.CopyTo(f);
                 }
 
-                smartStorage.IncreaseSize(new FileInfo(tmpFile).Length);
+                _smartStorage.IncreaseSize(new FileInfo(tmpFile).Length);
                 File.Delete(tmpFile);
 
-                using var db = cacheFactory.GetForWrite();
+                using var db = _cacheFactory.GetForWrite();
                 if ((cachedMap = db.Context.CacheBeatmapSet.FirstOrDefault(cbm => cbm.SetId == set.SetId)) ==
                     null)
                 {
@@ -132,16 +132,16 @@ namespace Pisstaube.Online
 
                 //DogStatsd.Increment("beatmap.downloads");
 
-                var cac = ipfsCache.CacheFile("cache/" + bmFileId);
+                var cac = _ipfsCache.CacheFile("cache/" + bmFileId);
                 
                 return new DownloadMapResponse {
                     File = $"{set.SetId} {set.Artist} - {set.Title}.osz",
                     FileStream = !ipfs || cac.Result == "" ? cacheStorage.GetStream (bmFileId, FileAccess.Read, FileMode.Open) : null, // Don't even bother opening a stream.
-                    IPFSHash = cac.Result,
+                    IpfsHash = cac.Result,
                 };
             }
 
-            using (var db = cacheFactory.GetForWrite())
+            using (var db = _cacheFactory.GetForWrite())
                 if ((cachedMap = db.Context.CacheBeatmapSet.FirstOrDefault(cbm => cbm.SetId == set.SetId)) == null)
                 {
                     db.Context.CacheBeatmapSet.Add(new CacheBeatmapSet
@@ -160,12 +160,12 @@ namespace Pisstaube.Online
 
             //DogStatsd.Increment("beatmap.downloads");
 
-            var cache = ipfsCache.CacheFile("cache/" + bmFileId);
+            var cache = _ipfsCache.CacheFile("cache/" + bmFileId);
             
             return new DownloadMapResponse {
                 File = $"{set.SetId} {set.Artist} - {set.Title}.osz",
                 FileStream = !ipfs || cache.Result == "" ? cacheStorage.GetStream (bmFileId, FileAccess.Read, FileMode.Open) : null, // Don't even bother opening a stream.
-                IPFSHash = cache.Result,
+                IpfsHash = cache.Result,
             };
         }
     }

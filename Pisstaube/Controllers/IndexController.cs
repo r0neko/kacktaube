@@ -10,6 +10,7 @@ using Pisstaube.CacheDb;
 using Pisstaube.Database;
 using Pisstaube.Online;
 using Pisstaube.Utils;
+using StatsdClient;
 
 namespace Pisstaube.Controllers
 {
@@ -17,13 +18,13 @@ namespace Pisstaube.Controllers
     [ApiController]
     public class IndexController : ControllerBase
     {
-        private readonly IAPIProvider apiProvider;
-        private readonly Storage fileStorage;
-        private readonly PisstaubeDbContext dbContext;
-        private readonly object dbContextLock = new object();
-        private readonly PisstaubeCacheDbContextFactory cache;
-        private readonly BeatmapDownloader downloader;
-        private readonly SetDownloader setDownloader;
+        private readonly IAPIProvider _apiProvider;
+        private readonly Storage _fileStorage;
+        private readonly PisstaubeDbContext _dbContext;
+        private readonly object _dbContextLock = new object();
+        private readonly PisstaubeCacheDbContextFactory _cache;
+        private readonly BeatmapDownloader _downloader;
+        private readonly SetDownloader _setDownloader;
 
         public IndexController(IAPIProvider apiProvider,
             Storage storage,
@@ -32,30 +33,31 @@ namespace Pisstaube.Controllers
             SetDownloader setDownloader,
             PisstaubeDbContext dbContext)
         {
-            this.apiProvider = apiProvider;
-            this.cache = cache;
-            this.downloader = downloader;
-            this.setDownloader = setDownloader;
-            this.dbContext = dbContext;
-            fileStorage = storage.GetStorageForDirectory("files");
+            this._apiProvider = apiProvider;
+            this._cache = cache;
+            this._downloader = downloader;
+            this._setDownloader = setDownloader;
+            this._dbContext = dbContext;
+            _fileStorage = storage.GetStorageForDirectory("files");
         }
         
         // GET /osu/:beatmapId
         [HttpGet("osu/{beatmapId:int}")]
         public ActionResult GetBeatmap(int beatmapId)
         {
-            var hash = cache.Get()
+            DogStatsd.Increment("osu.beatmap.download");
+            var hash = _cache.Get()
                     .CacheBeatmaps.Where(bm => bm.BeatmapId == beatmapId)
                     .Select(bm => bm.Hash)
                 .FirstOrDefault();
 
             osu.Game.IO.FileInfo info = null;
             if (hash == null)
-                lock (dbContextLock)
+                lock (_dbContextLock)
                 {
-                    foreach (var map in dbContext.Beatmaps.Where(bm => bm.BeatmapId == beatmapId))
+                    foreach (var map in _dbContext.Beatmaps.Where(bm => bm.BeatmapId == beatmapId))
                     {
-                        var (fileInfo, fileMd5) = downloader.Download(map);
+                        var (fileInfo, fileMd5) = _downloader.Download(map);
 
                         map.FileMd5 = fileMd5;
 
@@ -68,14 +70,15 @@ namespace Pisstaube.Controllers
             if (info == null)
                 return NotFound("Beatmap not Found!");
 
-            return File(fileStorage.GetStream(info.StoragePath), "application/octet-stream", hash);
+            return File(_fileStorage.GetStream(info.StoragePath), "application/octet-stream", hash);
         }
 
         // GET /osu/:fileMd5
         [HttpGet("osu/{fileMd5}")]
         public ActionResult GetBeatmap(string fileMd5)
         {
-            var hash = cache.Get()
+            DogStatsd.Increment("osu.beatmap.download");
+            var hash = _cache.Get()
                 .CacheBeatmaps
                 .Where(bm => bm.FileMd5 == fileMd5)
                 .Select(bm => bm.Hash)
@@ -83,11 +86,11 @@ namespace Pisstaube.Controllers
 
             osu.Game.IO.FileInfo info = null;
             if (hash == null)
-                lock (dbContextLock)
+                lock (_dbContextLock)
                 {
-                    foreach (var map in dbContext.Beatmaps.Where(bm => bm.FileMd5 == fileMd5))
+                    foreach (var map in _dbContext.Beatmaps.Where(bm => bm.FileMd5 == fileMd5))
                     {
-                        var (fileInfo, pFileMd5) = downloader.Download(map);
+                        var (fileInfo, pFileMd5) = _downloader.Download(map);
 
                         map.FileMd5 = pFileMd5;
                         info = fileInfo;
@@ -99,14 +102,16 @@ namespace Pisstaube.Controllers
             if (info == null)
                 return NotFound("Beatmap not Found!");
             
-            return File(fileStorage.GetStream(info.StoragePath), "application/octet-stream", hash);
+            return File(_fileStorage.GetStream(info.StoragePath), "application/octet-stream", hash);
         }
 
         // GET /d/:SetId
         [HttpGet("d/{beatmapSetId:int}")]
         public ActionResult GetSet(int beatmapSetId, bool ipfs = false)
         {
-            if (apiProvider.State == APIState.Offline)
+            DogStatsd.Increment("osu.set.download");
+            
+            if (_apiProvider.State == APIState.Offline)
             {
                 Logger.Error(new NotSupportedException("API is not Authenticated!"),
                     "API is not Authenticated! check your Login Details!",
@@ -118,7 +123,7 @@ namespace Pisstaube.Controllers
             SetDownloader.DownloadMapResponse r;
             try
             {
-                r = setDownloader.DownloadMap(beatmapSetId, !Request.Query.ContainsKey("novideo"), ipfs);
+                r = _setDownloader.DownloadMap(beatmapSetId, !Request.Query.ContainsKey("novideo"), ipfs);
             }
             catch (UnauthorizedAccessException)
             {
@@ -137,11 +142,11 @@ namespace Pisstaube.Controllers
                 return StatusCode(404, "Beatmap got DMCA'd!");
             }
             
-            if (ipfs && r.IPFSHash != "")
+            if (ipfs && r.IpfsHash != "")
                 return Ok(JsonUtil.Serialize(new
                 {
                     Name = r.File,
-                    Hash = r.IPFSHash
+                    Hash = r.IpfsHash
                 }));
             
             if (r.FileStream != null)
@@ -160,7 +165,9 @@ namespace Pisstaube.Controllers
         [HttpGet("d/{beatmapSetId:int}n")]
         public ActionResult GetSetNoVid(int beatmapSetId, bool ipfs = false)
         {
-            if (apiProvider.State == APIState.Offline)
+            DogStatsd.Increment("osu.set.download.no_video");
+            
+            if (_apiProvider.State == APIState.Offline)
             {
                 Logger.Error(new NotSupportedException("API is not Authenticated!"),
                     "API is not Authenticated! check your Login Details!",
@@ -172,7 +179,7 @@ namespace Pisstaube.Controllers
             SetDownloader.DownloadMapResponse r;
             try
             {
-                r = setDownloader.DownloadMap(beatmapSetId, false, ipfs);
+                r = _setDownloader.DownloadMap(beatmapSetId, false, ipfs);
             }
             catch (UnauthorizedAccessException)
             {
@@ -191,11 +198,11 @@ namespace Pisstaube.Controllers
                 return StatusCode(404, "Beatmap got DMCA'd!");
             }
             
-            if (ipfs && r.IPFSHash != "")
+            if (ipfs && r.IpfsHash != "")
                 return Ok(JsonUtil.Serialize(new
                 {
                     Name = r.File,
-                    Hash = r.IPFSHash
+                    Hash = r.IpfsHash
                 }));
             
             if (r.FileStream != null)

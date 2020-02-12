@@ -4,6 +4,8 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac.Extensions.DependencyInjection;
+using Datadog.Trace;
+using Datadog.Trace.Configuration;
 using dotenv.net;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
@@ -19,6 +21,19 @@ namespace Pisstaube
         {
             if (Environment.GetEnvironmentVariable("IS_CONTAINER") != "true")
                 DotEnv.Config();
+            
+            var settings = TracerSettings.FromDefaultSources();
+            
+            settings.ServiceName = "Pisstaube";
+            settings.AgentUri = new Uri($"http://{Environment.GetEnvironmentVariable("DD_AGENT_HOST")}:{Environment.GetEnvironmentVariable("DD_DOGSTATSD_PORT")}/");
+            
+            settings.Integrations["AdoNet"].Enabled = false;
+
+            var tracer = new Tracer(settings);
+            
+            Tracer.Instance = tracer;
+            
+            
             
             if (!Directory.Exists("./data"))
                 Directory.CreateDirectory("data");

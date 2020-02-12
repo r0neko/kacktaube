@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
+using StatsdClient;
 
 namespace Pisstaube.Controllers.v1
 {
@@ -10,10 +11,10 @@ namespace Pisstaube.Controllers.v1
     [ApiController]
     public class HashController : ControllerBase
     {
-        private readonly PisstaubeDbContext dbContext;
-        private object dbContextLock = new object();
+        private readonly PisstaubeDbContext _dbContext;
+        private object _dbContextLock = new object();
 
-        public HashController(PisstaubeDbContext dbContext) => this.dbContext = dbContext;
+        public HashController(PisstaubeDbContext dbContext) => this._dbContext = dbContext;
 
         // GET /api/v1/hash
         [HttpGet]
@@ -23,16 +24,17 @@ namespace Pisstaube.Controllers.v1
         [HttpGet("{hash}")]
         public ActionResult<BeatmapSet> Get(string hash)
         {
-            lock (dbContextLock) {
-                var bm = dbContext.Beatmaps.FirstOrDefault(cb => cb.FileMd5 == hash);
+            DogStatsd.Increment("v1.beatmap.hash");
+            lock (_dbContextLock) {
+                var bm = _dbContext.Beatmaps.FirstOrDefault(cb => cb.FileMd5 == hash);
                 if (bm == null)
                     return null;
 
-                var set = dbContext.BeatmapSet.FirstOrDefault(s => s.SetId == bm.ParentSetId);
+                var set = _dbContext.BeatmapSet.FirstOrDefault(s => s.SetId == bm.ParentSetId);
                 if (set == null)
                     return null;
 
-                set.ChildrenBeatmaps = dbContext.Beatmaps.Where(cb => cb.ParentSetId == set.SetId).ToList();
+                set.ChildrenBeatmaps = _dbContext.Beatmaps.Where(cb => cb.ParentSetId == set.SetId).ToList();
                 
                 return set;
             }

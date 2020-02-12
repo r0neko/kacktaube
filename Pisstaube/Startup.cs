@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using JetBrains.Annotations;
@@ -25,12 +26,13 @@ using Pisstaube.Engine;
 using Pisstaube.Online;
 using Pisstaube.Online.Crawler;
 using Pisstaube.Utils;
+using StatsdClient;
 
 namespace Pisstaube
 {
     public class Startup
     {
-        private readonly Storage dataStorage = new NativeStorage("data");
+        private readonly Storage _dataStorage = new NativeStorage("data");
         private readonly DatabaseContextFactory _osuContextFactory;
         
         public ILifetimeScope AutofacContainer { get; private set; }
@@ -38,7 +40,7 @@ namespace Pisstaube
         // ReSharper disable once UnusedParameter.Local
         public Startup(IConfiguration configuration)
         {
-            _osuContextFactory = new DatabaseContextFactory(dataStorage);
+            _osuContextFactory = new DatabaseContextFactory(_dataStorage);
         }
         
         
@@ -70,7 +72,7 @@ namespace Pisstaube
             builder.RegisterType<IpfsCache>().SingleInstance();
             
             builder.RegisterInstance(new RequestLimiter(1200, TimeSpan.FromMinutes(1)));
-            builder.RegisterInstance(dataStorage).As<Storage>();
+            builder.RegisterInstance(_dataStorage).As<Storage>();
             builder.RegisterInstance(_osuContextFactory).As<IDatabaseContextFactory>();
             builder.RegisterType<FileStore>();
             builder.RegisterType<PisstaubeDbContext>().InstancePerDependency();
@@ -90,13 +92,47 @@ namespace Pisstaube
         }
 
 
+        private void MetricUpdater(IAPIProvider provider, SmartStorage smartStorage, ICrawler osuCrawler, DatabaseHouseKeeper houseKeeper)
+        {
+            while (true)
+            {
+                DogStatsd.ServiceCheck("is_active", Status.OK);
+                DogStatsd.ServiceCheck("is_crawling", GlobalConfig.EnableCrawling ? Status.OK : Status.WARNING); 
+                DogStatsd.ServiceCheck("is_search_enabled", GlobalConfig.EnableSearch ? Status.OK : Status.CRITICAL); 
+                DogStatsd.ServiceCheck("is_updating_enabled", GlobalConfig.EnableUpdating ? Status.OK : Status.CRITICAL);
+                DogStatsd.ServiceCheck("osu_api_status", provider?.State switch
+                {
+                    APIState.Offline => Status.CRITICAL,
+                    APIState.Failing => Status.CRITICAL,
+                    APIState.Connecting => Status.WARNING,
+                    APIState.Online => Status.OK,
+                    _ => Status.UNKNOWN
+                });
+                
+                DogStatsd.Set("smart_storage.free_space", smartStorage.DataDirectorySize / smartStorage.MaxSize);
+                DogStatsd.Set("smart_storage.max_space", smartStorage.MaxSize);
+                
+                DogStatsd.Set("osu_crawler.latest_id", osuCrawler.LatestId);
+                DogStatsd.Set("house_keeper.to_update", houseKeeper.ToUpdate);
+                DogStatsd.Set("house_keeper.remaining", houseKeeper.Remaining);
+
+                Thread.Sleep(TimeSpan.FromMinutes(5));
+            }
+        }
+
+
         [UsedImplicitly]
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
             ICrawler crawler, IAPIProvider apiProvider, DatabaseHouseKeeper houseKeeper,
-            PisstaubeCacheDbContextFactory cacheDbContextFactory, IBeatmapSearchEngineProvider searchEngine)
+            PisstaubeCacheDbContextFactory cacheDbContextFactory, IBeatmapSearchEngineProvider searchEngine,
+            SmartStorage smartStorage)
         {
-
-            while (!searchEngine.isConnected)
+            Logger.Enabled = true;
+            Logger.Level = LogLevel.Debug;
+            Logger.GameIdentifier = "Pisstaube";
+            Logger.Storage = _dataStorage.GetStorageForDirectory("logs");
+            
+            while (!searchEngine.IsConnected)
             {
                 Logger.LogPrint("Search Engine is not yet Connected!", LoggingTarget.Database, LogLevel.Important);
                 Thread.Sleep(1000);
@@ -105,10 +141,9 @@ namespace Pisstaube
             cacheDbContextFactory.Get().Migrate();
             _osuContextFactory.Get().Migrate();
 
-            Logger.Enabled = true;
-            Logger.Level = LogLevel.Debug;
-            Logger.GameIdentifier = "Pisstaube";
-            Logger.Storage = dataStorage.GetStorageForDirectory("logs");
+            DogStatsd.Configure(new StatsdConfig {Prefix = "pisstaube"});
+
+            new Thread(() => MetricUpdater(apiProvider, smartStorage, crawler, houseKeeper)).Start();
             
             JsonUtil.Initialize();
 

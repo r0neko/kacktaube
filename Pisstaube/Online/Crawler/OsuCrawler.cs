@@ -22,8 +22,8 @@ namespace Pisstaube.Online.Crawler
     /// </summary>
     public class OsuCrawler : ICrawler, IDisposable
     {
-        private readonly Storage storage;
-        private readonly BeatmapDownloader beatmapDownloader;
+        private readonly Storage _storage;
+        private readonly BeatmapDownloader _beatmapDownloader;
         private object DbContextMutex { get; } = new object();
         private PisstaubeDbContext DbContext { get; }
         private IBeatmapSearchEngineProvider SearchEngine { get; }
@@ -33,8 +33,8 @@ namespace Pisstaube.Online.Crawler
         public int LatestId { get; private set; }
         public bool IsCrawling { get; private set; }
         
-        private Thread workingThread;
-        private CancellationTokenSource cancellationTokenSource;
+        private Thread _workingThread;
+        private CancellationTokenSource _cancellationTokenSource;
         
         protected List<Task> Tasks { get; } = new List<Task>();
         protected CancellationToken CancellationToken { get; private set; }
@@ -42,8 +42,8 @@ namespace Pisstaube.Online.Crawler
         public OsuCrawler(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider,
             IBeatmapSearchEngineProvider searchEngine, BeatmapDownloader beatmapDownloader)
         {
-            this.storage = storage;
-            this.beatmapDownloader = beatmapDownloader;
+            this._storage = storage;
+            this._beatmapDownloader = beatmapDownloader;
             DbContext = new PisstaubeDbContext();
             SearchEngine = searchEngine;
             ApiProvider = apiProvider;
@@ -58,31 +58,31 @@ namespace Pisstaube.Online.Crawler
 
         public void Start()
         {
-            if (workingThread?.IsAlive == true)
+            if (_workingThread?.IsAlive == true)
                 return;
 
-            workingThread = new Thread(ThreadWorker);
-            cancellationTokenSource = new CancellationTokenSource();
-            CancellationToken = cancellationTokenSource.Token;
+            _workingThread = new Thread(ThreadWorker);
+            _cancellationTokenSource = new CancellationTokenSource();
+            CancellationToken = _cancellationTokenSource.Token;
             
-            workingThread.Start();
+            _workingThread.Start();
         }
 
         public void Stop()
         {
-            if (workingThread == null)
+            if (_workingThread == null)
                 throw new NotSupportedException($"It's not possible to Stop {nameof(OsuCrawler)} before it has even Started!");
             
-            cancellationTokenSource.Cancel();
-            workingThread.Join();
+            _cancellationTokenSource.Cancel();
+            _workingThread.Join();
         }
 
         public void Wait()
         {
-            workingThread.Join();
+            _workingThread.Join();
         }
 
-        private int ErrorCount = 0;
+        private int _errorCount = 0;
         public virtual async Task<bool> Crawl(int id)
         {
             Logger.LogPrint($"Crawling BeatmapId {LatestId}...", LoggingTarget.Network, LogLevel.Debug);
@@ -102,7 +102,7 @@ namespace Pisstaube.Online.Crawler
                 if (beatmapSet == null)
                     return false;
 
-                var cacheStorage = storage.GetStorageForDirectory("cache");
+                var cacheStorage = _storage.GetStorageForDirectory("cache");
                 
                 if (cacheStorage.Exists(beatmapSet.SetId.ToString("x8") + "_novid"))
                     cacheStorage.Delete(beatmapSet.SetId.ToString("x8") + "_novid");
@@ -113,7 +113,7 @@ namespace Pisstaube.Online.Crawler
                 {
                     foreach (var childrenBeatmap in beatmapSet.ChildrenBeatmaps)
                     {
-                        var fileInfo = beatmapDownloader.Download(childrenBeatmap);
+                        var fileInfo = _beatmapDownloader.Download(childrenBeatmap);
 
                         childrenBeatmap.FileMd5 = fileInfo.Item2;
                     }
@@ -141,12 +141,12 @@ namespace Pisstaube.Online.Crawler
 
                 SearchEngine.Index(new []{ beatmapSet });
 
-                ErrorCount = 0;
+                _errorCount = 0;
                 return true;
             }
             catch (WebException) // Don't worry about WebException exceptions, we can safely ignore those.
             {
-                ErrorCount++;
+                _errorCount++;
                 return false;
             } 
             catch (Exception e) // Everything else, redo the Crawl.
@@ -154,13 +154,13 @@ namespace Pisstaube.Online.Crawler
                 DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 Logger.Error(e, "Unknown error during crawling occured!");
 
-                if (ErrorCount > 1024)
+                if (_errorCount > 1024)
                 {
                     Logger.LogPrint("Error count too high! canceling crawl...", LoggingTarget.Network, LogLevel.Important);
                     return false;
                 }
 
-                ErrorCount++;
+                _errorCount++;
                 return await Crawl(id);
             }
         }
@@ -169,7 +169,7 @@ namespace Pisstaube.Online.Crawler
         {
             while (!CancellationToken.IsCancellationRequested)
             {
-                if (ErrorCount > 1024)
+                if (_errorCount > 1024)
                 {
                     Logger.LogPrint("Error count too high! will continue tomorrow...", LoggingTarget.Network, LogLevel.Important);
                     Thread.Sleep(TimeSpan.FromDays(1));
@@ -192,7 +192,7 @@ namespace Pisstaube.Online.Crawler
         public void Dispose()
         {
             Stop();
-            cancellationTokenSource?.Dispose();
+            _cancellationTokenSource?.Dispose();
             DbContext?.Dispose();
         }
     }

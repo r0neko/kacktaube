@@ -10,7 +10,7 @@ namespace Pisstaube.CacheDb
     {
         private readonly Storage _storage;
 
-        private const string DATABASE_NAME = @"cache";
+        private const string DatabaseName = @"cache";
 
         private ThreadLocal<PisstaubeCacheDbContext> _threadContexts;
 
@@ -103,7 +103,7 @@ namespace Pisstaube.CacheDb
         }
 
         protected virtual PisstaubeCacheDbContext CreateContext() =>
-            new PisstaubeCacheDbContext(_storage.GetDatabaseConnectionString(DATABASE_NAME))
+            new PisstaubeCacheDbContext(_storage.GetDatabaseConnectionString(DatabaseName))
             {
                 Database = {AutoTransactionsEnabled = false}
             };
@@ -113,7 +113,7 @@ namespace Pisstaube.CacheDb
             lock (_writeLock)
             {
                 RecycleThreadContexts();
-                _storage.DeleteDatabase(DATABASE_NAME);
+                _storage.DeleteDatabase(DatabaseName);
             }
         }
     }

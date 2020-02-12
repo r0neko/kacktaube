@@ -14,13 +14,13 @@ namespace Pisstaube.Engine
 {
     public class BeatmapSearchEngine : IBeatmapSearchEngineProvider
     {
-        private readonly PisstaubeDbContext dbContext;
-        private readonly object dbContextMutex = new object();
-        private readonly ElasticClient elasticClient;
+        private readonly PisstaubeDbContext _dbContext;
+        private readonly object _dbContextMutex = new object();
+        private readonly ElasticClient _elasticClient;
 
         public BeatmapSearchEngine(PisstaubeDbContext dbContext)
         {
-            this.dbContext = dbContext;
+            this._dbContext = dbContext;
             
             var settings = new ConnectionSettings(
                     new Uri(
@@ -34,10 +34,10 @@ namespace Pisstaube.Engine
                 .EnableHttpCompression()
                 .DefaultIndex("pisstaube");
 
-            elasticClient = new ElasticClient(settings);
+            _elasticClient = new ElasticClient(settings);
         }
 
-        public bool isConnected => elasticClient.Ping().ApiCall.Success;
+        public bool IsConnected => _elasticClient.Ping().ApiCall.Success;
 
         public void Index(IEnumerable<BeatmapSet> sets)
         {
@@ -50,14 +50,14 @@ namespace Pisstaube.Engine
 
                 // Delete if exists.
                 Logger.LogPrint($"Deleting chunk {c + truncatedBeatmaps.Count} from ElasticSearch");
-                elasticClient.DeleteMany(truncatedBeatmaps);
+                _elasticClient.DeleteMany(truncatedBeatmaps);
                 /* var res = // Ignore errors for DeleteMany.
                 if (!res.IsValid)
                     Logger.LogPrint(res.DebugInformation);
                 */
                 
                 Logger.LogPrint($"Submitting chunk {c + truncatedBeatmaps.Count}");
-                var result = elasticClient.IndexMany(elasticBeatmaps); // Index all truncated maps at once.
+                var result = _elasticClient.IndexMany(elasticBeatmaps); // Index all truncated maps at once.
                 if (!result.IsValid)
                     Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
                 
@@ -74,7 +74,7 @@ namespace Pisstaube.Engine
             if (amount > 50 || amount <= -1)
                 amount = 50;
             
-            var result = elasticClient.Search<ElasticBeatmap>(s =>
+            var result = _elasticClient.Search<ElasticBeatmap>(s =>
             {
                 var ret = s
                     .From(offset)
@@ -137,7 +137,7 @@ namespace Pisstaube.Engine
                             )
                         );
                 
-                Logger.LogPrint(elasticClient.RequestResponseSerializer.SerializeToString(ret), LoggingTarget.Network, LogLevel.Debug);
+                Logger.LogPrint(_elasticClient.RequestResponseSerializer.SerializeToString(ret), LoggingTarget.Network, LogLevel.Debug);
                 
                 return ret;
             });
@@ -149,11 +149,11 @@ namespace Pisstaube.Engine
             }
             
             var r = new List<BeatmapSet>();
-            lock (dbContextMutex)
+            lock (_dbContextMutex)
             {
                 r.AddRange(from hit in result.Hits
                     where hit != null
-                    select dbContext.BeatmapSet.Include(o => o.ChildrenBeatmaps)
+                    select _dbContext.BeatmapSet.Include(o => o.ChildrenBeatmaps)
                         .FirstOrDefault(o => o.SetId == hit.Source.Id));
             }
             

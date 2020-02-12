@@ -8,21 +8,21 @@ namespace Pisstaube.Utils
     /// </summary>
     public class RequestLimiter
     {
-        private readonly int requestAmount;
-        private readonly TimeSpan howLong;
-        private DateTime dtLast;
-        private DateTime dtNext;
+        private readonly int _requestAmount;
+        private readonly TimeSpan _howLong;
+        private DateTime _dtLast;
+        private DateTime _dtNext;
 
-        private int req;
+        private int _req;
 
         public RequestLimiter(int requestAmount, TimeSpan howLong)
         {
-            this.requestAmount = requestAmount - 1;
-            this.howLong = howLong;
-            dtLast = DateTime.Now;
-            dtNext = DateTime.Now;
+            this._requestAmount = requestAmount - 1;
+            this._howLong = howLong;
+            _dtLast = DateTime.Now;
+            _dtNext = DateTime.Now;
 
-            dtNext += howLong;
+            _dtNext += howLong;
         }
 
         /// <summary>
@@ -30,19 +30,19 @@ namespace Pisstaube.Utils
         /// </summary>
         public void Limit()
         {
-            if (dtLast > dtNext)
+            if (_dtLast > _dtNext)
             {
-                req = 1;
+                _req = 1;
 
-                dtNext = DateTime.Now;
-                dtNext += howLong;
+                _dtNext = DateTime.Now;
+                _dtNext += _howLong;
             }
 
-            if (req > requestAmount && dtNext.Subtract(dtLast).TotalMilliseconds > 0)
-                Thread.Sleep(dtNext.Subtract(dtLast));
+            if (_req > _requestAmount && _dtNext.Subtract(_dtLast).TotalMilliseconds > 0)
+                Thread.Sleep(_dtNext.Subtract(_dtLast));
 
-            req++;
-            dtLast = DateTime.Now;
+            _req++;
+            _dtLast = DateTime.Now;
         }
     }
 }

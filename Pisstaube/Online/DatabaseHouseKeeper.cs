@@ -13,16 +13,19 @@ namespace Pisstaube.Online
 {
     public class DatabaseHouseKeeper : OsuCrawler
     {
-        private readonly RequestLimiter requestLimiter;
-        private readonly IAPIProvider apiProvider;
-        private readonly PisstaubeDbContext dbContext;
-        private readonly IBeatmapSearchEngineProvider searchEngine;
+        private readonly RequestLimiter _requestLimiter;
+        private readonly IAPIProvider _apiProvider;
+        private readonly PisstaubeDbContext _dbContext;
+        private readonly IBeatmapSearchEngineProvider _searchEngine;
+        
+        public int ToUpdate { get; private set; }
+        public int Remaining { get; private set; }
         
         protected override void ThreadWorker()
         {
             while (!CancellationToken.IsCancellationRequested)
             {
-                var beatmaps = dbContext.BeatmapSet
+                var beatmaps = _dbContext.BeatmapSet
                     .Where(x => !x.Disabled)
                     .AsEnumerable()
                     .Where(
@@ -57,7 +60,7 @@ namespace Pisstaube.Online
                         Tasks.Clear(); // Remove all previous tasks.
                     }
                     
-                    requestLimiter.Limit();
+                    _requestLimiter.Limit();
                     
                     Tasks.Add(Crawl(beatmap.SetId));
                 }
@@ -68,10 +71,10 @@ namespace Pisstaube.Online
 
         public DatabaseHouseKeeper(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider, IBeatmapSearchEngineProvider searchEngine, BeatmapDownloader beatmapDownloader) : base(storage, requestLimiter, apiProvider, searchEngine, beatmapDownloader)
         {
-            this.requestLimiter = requestLimiter;
-            this.apiProvider = apiProvider;
-            this.dbContext = new PisstaubeDbContext();
-            this.searchEngine = searchEngine;
+            this._requestLimiter = requestLimiter;
+            this._apiProvider = apiProvider;
+            this._dbContext = new PisstaubeDbContext();
+            this._searchEngine = searchEngine;
         }
     }
 }

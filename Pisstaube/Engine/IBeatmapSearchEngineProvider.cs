@@ -6,7 +6,7 @@ namespace Pisstaube.Engine
 {
     public interface IBeatmapSearchEngineProvider
     {
-        bool isConnected { get; }
+        bool IsConnected { get; }
         
         void Index(IEnumerable<BeatmapSet> sets);
 

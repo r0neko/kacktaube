@@ -8,6 +8,7 @@ using Pisstaube.Allocation;
 using Pisstaube.Database.Models;
 using Pisstaube.Engine;
 using Pisstaube.Utils;
+using StatsdClient;
 
 namespace Pisstaube.Controllers.cheesegull
 {
@@ -15,13 +16,13 @@ namespace Pisstaube.Controllers.cheesegull
     [ApiController]
     public class SearchController : ControllerBase
     {
-        private readonly IBeatmapSearchEngineProvider searchEngine;
-        private readonly Cache cache;
+        private readonly IBeatmapSearchEngineProvider _searchEngine;
+        private readonly Cache _cache;
 
         public SearchController(IBeatmapSearchEngineProvider searchEngine, Cache cache)
         {
-            this.searchEngine = searchEngine;
-            this.cache = cache;
+            this._searchEngine = searchEngine;
+            this._cache = cache;
         }
 
         private bool GetTryFromQuery<T>(IEnumerable<string> keys, T def, out T val)
@@ -57,6 +58,7 @@ namespace Pisstaube.Controllers.cheesegull
         [HttpGet]
         public ActionResult<string> Get()
         {
+            DogStatsd.Increment("beatmap.searches");
             if (!GlobalConfig.EnableSearch)
                 return Unauthorized("Searches are currently Disabled!");
 
@@ -82,13 +84,11 @@ namespace Pisstaube.Controllers.cheesegull
 
             var ha = query + amount + offset + status + mode + page + raw;
 
-            if (cache.TryGet(ha, out string ca))
+            if (_cache.TryGet(ha, out string ca))
                 return ca;
 
-            var result = searchEngine.Search(query, amount, offset, status, (PlayMode) mode);
-
-            //DogStatsd.Increment("beatmap.searches");
-
+            var result = _searchEngine.Search(query, amount, offset, status, (PlayMode) mode);
+            
             var beatmapSets = result as BeatmapSet[] ?? result.ToArray();
             if (beatmapSets.Length == 0) result = null; // Cheesegull logic ^^,
 
@@ -115,7 +115,7 @@ namespace Pisstaube.Controllers.cheesegull
             }
 
             Return:
-            cache.Set(ha, ca, TimeSpan.FromMinutes(10));
+            _cache.Set(ha, ca, TimeSpan.FromMinutes(10));
             return ca;
         }
     }

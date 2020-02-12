@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
 using Pisstaube.Utils;
+using StatsdClient;
 
 namespace Pisstaube.Controllers.cheesegull
 {
@@ -15,10 +16,10 @@ namespace Pisstaube.Controllers.cheesegull
     [ApiController]
     public class BeatmapController : ControllerBase
     {
-        private readonly PisstaubeDbContext dbContext;
-        private object dbContextLock = new object();
+        private readonly PisstaubeDbContext _dbContext;
+        private object _dbContextLock = new object();
 
-        public BeatmapController(PisstaubeDbContext dbContext) => this.dbContext = dbContext;
+        public BeatmapController(PisstaubeDbContext dbContext) => this._dbContext = dbContext;
 
         [HttpGet]
         public ActionResult<List<BeatmapSet>> Get() => null;
@@ -27,16 +28,16 @@ namespace Pisstaube.Controllers.cheesegull
         [HttpGet("b/{beatmapId:int}")]
         public ActionResult<string> GetBeatmap(int beatmapId)
         {
-            //DogStatsd.Increment("beatmap.request");
+            DogStatsd.Increment("beatmap.request");
 
-            lock (dbContextLock) {
+            lock (_dbContextLock) {
                 var raw = Request.Query.ContainsKey("raw");
                 if (!raw)
-                    return JsonUtil.Serialize(dbContext.Beatmaps.FirstOrDefault(cb => cb.BeatmapId == beatmapId));
+                    return JsonUtil.Serialize(_dbContext.Beatmaps.FirstOrDefault(cb => cb.BeatmapId == beatmapId));
 
                 // TODO: tried to make both in one query, results in crash. have to take a closer look in the near future.
-                var beatmap = dbContext.Beatmaps.FirstOrDefault(bm => bm.BeatmapId == beatmapId);
-                var set = dbContext.BeatmapSet.FirstOrDefault(s => s.SetId == beatmap.ParentSetId);
+                var beatmap = _dbContext.Beatmaps.FirstOrDefault(bm => bm.BeatmapId == beatmapId);
+                var set = _dbContext.BeatmapSet.FirstOrDefault(s => s.SetId == beatmap.ParentSetId);
                 
                 if (set == null)
                     return "0";
@@ -61,6 +62,8 @@ namespace Pisstaube.Controllers.cheesegull
         [HttpGet("b/{beatmapIds}")]
         public ActionResult<string> GetBeatmap(string beatmapIds)
         {
+            DogStatsd.Increment("beatmap.request");
+            
             var raw = Request.Query.ContainsKey("raw");
             if (raw)
                 return "raw is not supported!";
@@ -70,9 +73,9 @@ namespace Pisstaube.Controllers.cheesegull
                 var bms = beatmapIds.Split(";");
                 var bmIds = Array.ConvertAll(bms, int.Parse);
 
-                lock (dbContextLock)
+                lock (_dbContextLock)
                     return JsonUtil.Serialize(
-                        dbContext.Beatmaps
+                        _dbContext.Beatmaps
                                 .Where(cb => bmIds.Any(x => cb.BeatmapId == x)));
             }
             catch (FormatException)
@@ -85,16 +88,16 @@ namespace Pisstaube.Controllers.cheesegull
         [HttpGet("s/{beatmapSetId:int}")]
         public async Task<ActionResult<string>> GetSet(int beatmapSetId)
         {
-            lock (dbContextLock)
+            DogStatsd.Increment("beatmap.set.request");
+            
+            lock (_dbContextLock)
             {
                 var raw = Request.Query.ContainsKey("raw");
                 var set =
-                    dbContext.BeatmapSet
+                    _dbContext.BeatmapSet
                         .Where(s => s.SetId == beatmapSetId)
                         .Include(x => x.ChildrenBeatmaps)
                         .FirstOrDefault();
-
-                //DogStatsd.Increment("beatmap.set.request");
 
                 if (!raw)
                     return JsonUtil.Serialize(set);
@@ -122,6 +125,8 @@ namespace Pisstaube.Controllers.cheesegull
         [HttpGet("s/{beatmapSetIds}")]
         public ActionResult<string> GetSet(string beatmapSetIds)
         {
+            DogStatsd.Increment("beatmap.set.request");
+            
             var raw = Request.Query.ContainsKey("raw");
             if (raw)
                 return "raw is not supported!";
@@ -131,10 +136,10 @@ namespace Pisstaube.Controllers.cheesegull
                 var bms = beatmapSetIds.Split(";");
                 var bmsIds = Array.ConvertAll(bms, int.Parse);
 
-                lock (dbContextLock)
+                lock (_dbContextLock)
                 {
                     return JsonUtil.Serialize(
-                        dbContext.BeatmapSet.Where(set => bmsIds.Any(s => set.SetId == s))
+                        _dbContext.BeatmapSet.Where(set => bmsIds.Any(s => set.SetId == s))
                             .Include(x => x.ChildrenBeatmaps)
                     );
                 }
@@ -150,15 +155,16 @@ namespace Pisstaube.Controllers.cheesegull
         [HttpGet("/f/{bmfileName}")]
         public async Task<ActionResult<string>> GetBeatmapSetByFile(string bmFileName)
         {
+            DogStatsd.Increment("beatmap.file.request");
             var names = Regex.Split(bmFileName, @"(?<!\\);").Select(n => n.Replace("\\;", ";")).ToArray();
 
             foreach (var name in names) Console.WriteLine(name);
 
             // TODO: Add Cache as this is slow.
-            lock (dbContext) {
+            lock (_dbContext) {
                 var bms = (
-                    from b in dbContext.Beatmaps
-                    join p in dbContext.BeatmapSet on b.ParentSetId equals p.SetId
+                    from b in _dbContext.Beatmaps
+                    join p in _dbContext.BeatmapSet on b.ParentSetId equals p.SetId
                     where names.Any(s => s == Regex.Replace($"{p.Artist} - {p.Title} ({p.Creator}) [{b.DiffName}].osu",
                                              @"[^\u0000-\u007F]+", string.Empty)) ||
                           names.Any(s => s == Regex.Replace($"{p.Artist} - {p.Title} ({p.Creator}).osu",

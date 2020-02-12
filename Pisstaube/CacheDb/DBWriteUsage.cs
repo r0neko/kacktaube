@@ -7,12 +7,12 @@ namespace Pisstaube.CacheDb
     public class DbWriteUsage : IDisposable
     {
         public readonly PisstaubeCacheDbContext Context;
-        private readonly Action<DbWriteUsage> usageCompleted;
+        private readonly Action<DbWriteUsage> _usageCompleted;
 
         public DbWriteUsage(PisstaubeCacheDbContext context, Action<DbWriteUsage> onCompleted)
         {
             Context = context;
-            usageCompleted = onCompleted;
+            _usageCompleted = onCompleted;
         }
 
         public bool PerformedWrite { get; private set; }
@@ -39,7 +39,7 @@ namespace Pisstaube.CacheDb
             }
             finally
             {
-                usageCompleted?.Invoke(this);
+                _usageCompleted?.Invoke(this);
             }
         }
 
