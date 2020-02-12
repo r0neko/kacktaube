@@ -6,6 +6,8 @@ namespace Pisstaube.Engine
 {
     public interface IBeatmapSearchEngineProvider
     {
+        bool isConnected { get; }
+        
         void Index(IEnumerable<BeatmapSet> sets);
 
         IEnumerable<BeatmapSet> Search(string query,

@@ -95,7 +95,8 @@ namespace Pisstaube.Database.Models
                 HasVideo = info.OnlineInfo.HasVideo,
                 ChildrenBeatmaps = new List<ChildrenBeatmap>(),
                 Genre = (Genre) (info.OnlineInfo.Genre.Id ?? (int) Genre.Any),
-                Language = (Language) info.OnlineInfo.Language.Id
+                Language = (Language) info.OnlineInfo.Language.Id,
+                Disabled = info.OnlineInfo.Availability.DownloadDisabled
             };
 
             foreach (var map in info.Beatmaps)

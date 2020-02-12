@@ -37,6 +37,8 @@ namespace Pisstaube.Engine
             elasticClient = new ElasticClient(settings);
         }
 
+        public bool isConnected => elasticClient.Ping().ApiCall.Success;
+
         public void Index(IEnumerable<BeatmapSet> sets)
         {
             var elasticBeatmaps = sets.Select(ElasticBeatmap.GetElasticBeatmap).ToList();

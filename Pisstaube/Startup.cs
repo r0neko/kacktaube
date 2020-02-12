@@ -93,8 +93,14 @@ namespace Pisstaube
         [UsedImplicitly]
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
             ICrawler crawler, IAPIProvider apiProvider, DatabaseHouseKeeper houseKeeper,
-            PisstaubeCacheDbContextFactory cacheDbContextFactory)
+            PisstaubeCacheDbContextFactory cacheDbContextFactory, IBeatmapSearchEngineProvider searchEngine)
         {
+            while (!searchEngine.isConnected)
+            {
+                Logger.LogPrint("Search Engine is not yet Connected!", LoggingTarget.Database, LogLevel.Important);
+                Thread.Sleep(1000);
+            }
+
             cacheDbContextFactory.Get().Migrate();
             _osuContextFactory.Get().Migrate();
 
@@ -117,7 +123,7 @@ namespace Pisstaube
                 {
                     Logger.LogPrint("Not Logged in yet...");
                     Thread.Sleep(1000);
-                    //continue;
+                    continue;
                 }
                 if (apiProvider.State == APIState.Failing)
                 {   
