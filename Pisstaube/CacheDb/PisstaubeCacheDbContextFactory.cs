@@ -25,7 +25,7 @@ namespace Pisstaube.CacheDb
 
         public PisstaubeCacheDbContextFactory(Storage storage)
         {
-            this._storage = storage;
+            _storage = storage;
             RecycleThreadContexts();
         }
 

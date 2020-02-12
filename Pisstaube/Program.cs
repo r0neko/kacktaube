@@ -48,6 +48,7 @@ namespace Pisstaube
                 .UseContentRoot(Path.Join(Directory.GetCurrentDirectory(), "data"))
                 .UseStartup<Startup>()
                 .UseShutdownTimeout(TimeSpan.FromSeconds(5))
+                .UseSentry(Environment.GetEnvironmentVariable("SENTRY_DNS"))
                 .Build();
 
             await host.RunAsync(Cts.Token);

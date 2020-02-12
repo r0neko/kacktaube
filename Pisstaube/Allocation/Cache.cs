@@ -7,7 +7,7 @@ namespace Pisstaube.Allocation
     {
         private readonly IMemoryCache _memoryCache;
 
-        public Cache(IMemoryCache memoryCache) => this._memoryCache = memoryCache;
+        public Cache(IMemoryCache memoryCache) => _memoryCache = memoryCache;
         
         public void Set<T>(object key, T value, TimeSpan duration)
         {

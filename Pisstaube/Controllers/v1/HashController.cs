@@ -14,7 +14,7 @@ namespace Pisstaube.Controllers.v1
         private readonly PisstaubeDbContext _dbContext;
         private object _dbContextLock = new object();
 
-        public HashController(PisstaubeDbContext dbContext) => this._dbContext = dbContext;
+        public HashController(PisstaubeDbContext dbContext) => _dbContext = dbContext;
 
         // GET /api/v1/hash
         [HttpGet]

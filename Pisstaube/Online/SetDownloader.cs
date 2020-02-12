@@ -46,14 +46,14 @@ namespace Pisstaube.Online
             IpfsCache ipfsCache
         )
         {
-            this._storage = storage;
-            this._apiProvider = apiProvider;
-            this._dbContext = dbContext;
-            this._cacheFactory = cacheFactory;
-            this._smartStorage = smartStorage;
-            this._limiter = limiter;
-            this._search = search;
-            this._ipfsCache = ipfsCache;
+            _storage = storage;
+            _apiProvider = apiProvider;
+            _dbContext = dbContext;
+            _cacheFactory = cacheFactory;
+            _smartStorage = smartStorage;
+            _limiter = limiter;
+            _search = search;
+            _ipfsCache = ipfsCache;
         }
 
         public DownloadMapResponse DownloadMap(int beatmapSetId, bool dlVideo = false, bool ipfs = false)

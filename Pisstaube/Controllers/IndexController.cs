@@ -33,11 +33,11 @@ namespace Pisstaube.Controllers
             SetDownloader setDownloader,
             PisstaubeDbContext dbContext)
         {
-            this._apiProvider = apiProvider;
-            this._cache = cache;
-            this._downloader = downloader;
-            this._setDownloader = setDownloader;
-            this._dbContext = dbContext;
+            _apiProvider = apiProvider;
+            _cache = cache;
+            _downloader = downloader;
+            _setDownloader = setDownloader;
+            _dbContext = dbContext;
             _fileStorage = storage.GetStorageForDirectory("files");
         }
         

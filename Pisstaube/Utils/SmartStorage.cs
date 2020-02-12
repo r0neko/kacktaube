@@ -19,7 +19,7 @@ namespace Pisstaube.Utils
 
         public SmartStorage(Storage storage, PisstaubeCacheDbContextFactory cache)
         {
-            this._cache = cache;
+            _cache = cache;
             var maximumSize = Environment.GetEnvironmentVariable("CLEANER_MAX_SIZE");
             Debug.Assert(maximumSize != null, nameof(maximumSize) + " != null");
 
@@ -84,7 +84,7 @@ namespace Pisstaube.Utils
                     break;
 
                 default:
-                    long.TryParse(maximumSize.Remove(maximumSize.Length - 1), out this._maxSize);
+                    long.TryParse(maximumSize.Remove(maximumSize.Length - 1), out _maxSize);
                     if (_maxSize == 0)
                         _maxSize = 536870912000; // 500 gb
                     break;

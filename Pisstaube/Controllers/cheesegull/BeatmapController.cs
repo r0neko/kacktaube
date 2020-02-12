@@ -19,7 +19,7 @@ namespace Pisstaube.Controllers.cheesegull
         private readonly PisstaubeDbContext _dbContext;
         private object _dbContextLock = new object();
 
-        public BeatmapController(PisstaubeDbContext dbContext) => this._dbContext = dbContext;
+        public BeatmapController(PisstaubeDbContext dbContext) => _dbContext = dbContext;
 
         [HttpGet]
         public ActionResult<List<BeatmapSet>> Get() => null;

@@ -14,6 +14,7 @@ using Pisstaube.Database;
 using Pisstaube.Database.Models;
 using Pisstaube.Engine;
 using Pisstaube.Utils;
+using Sentry;
 
 namespace Pisstaube.Online.Crawler
 {
@@ -42,8 +43,8 @@ namespace Pisstaube.Online.Crawler
         public OsuCrawler(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider,
             IBeatmapSearchEngineProvider searchEngine, BeatmapDownloader beatmapDownloader)
         {
-            this._storage = storage;
-            this._beatmapDownloader = beatmapDownloader;
+            _storage = storage;
+            _beatmapDownloader = beatmapDownloader;
             DbContext = new PisstaubeDbContext();
             SearchEngine = searchEngine;
             ApiProvider = apiProvider;
@@ -82,7 +83,7 @@ namespace Pisstaube.Online.Crawler
             _workingThread.Join();
         }
 
-        private int _errorCount = 0;
+        private int _errorCount;
         public virtual async Task<bool> Crawl(int id)
         {
             Logger.LogPrint($"Crawling BeatmapId {LatestId}...", LoggingTarget.Network, LogLevel.Debug);
@@ -153,6 +154,8 @@ namespace Pisstaube.Online.Crawler
             {
                 DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 Logger.Error(e, "Unknown error during crawling occured!");
+
+                SentrySdk.CaptureException(e);
 
                 if (_errorCount > 1024)
                 {

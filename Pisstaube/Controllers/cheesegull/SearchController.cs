@@ -21,8 +21,8 @@ namespace Pisstaube.Controllers.cheesegull
 
         public SearchController(IBeatmapSearchEngineProvider searchEngine, Cache cache)
         {
-            this._searchEngine = searchEngine;
-            this._cache = cache;
+            _searchEngine = searchEngine;
+            _cache = cache;
         }
 
         private bool GetTryFromQuery<T>(IEnumerable<string> keys, T def, out T val)

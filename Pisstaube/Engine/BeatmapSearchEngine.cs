@@ -20,7 +20,7 @@ namespace Pisstaube.Engine
 
         public BeatmapSearchEngine(PisstaubeDbContext dbContext)
         {
-            this._dbContext = dbContext;
+            _dbContext = dbContext;
             
             var settings = new ConnectionSettings(
                     new Uri(

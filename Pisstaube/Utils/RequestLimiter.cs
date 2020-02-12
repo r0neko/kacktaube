@@ -17,8 +17,8 @@ namespace Pisstaube.Utils
 
         public RequestLimiter(int requestAmount, TimeSpan howLong)
         {
-            this._requestAmount = requestAmount - 1;
-            this._howLong = howLong;
+            _requestAmount = requestAmount - 1;
+            _howLong = howLong;
             _dtLast = DateTime.Now;
             _dtNext = DateTime.Now;
 

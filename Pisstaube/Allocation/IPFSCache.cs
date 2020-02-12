@@ -13,7 +13,7 @@ namespace Pisstaube.Allocation
  
         public IpfsCache(Storage storage) 
         { 
-            this._storage = storage; 
+            _storage = storage; 
         } 
          
         public async Task<string> CacheFile(string path) 
