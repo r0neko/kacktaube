@@ -1,17 +1,17 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac.Extensions.DependencyInjection;
 using dotenv.net;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
-using Org.BouncyCastle.Utilities.Net;
 using osu.Framework.Logging;
 
 namespace Pisstaube
 {
-    internal class Program
+    internal static class Program
     {
         private static readonly CancellationTokenSource Cts = new CancellationTokenSource();
         
