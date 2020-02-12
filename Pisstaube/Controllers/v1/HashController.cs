@@ -33,6 +33,7 @@ namespace Pisstaube.Controllers.v1
                     return null;
 
                 set.ChildrenBeatmaps = dbContext.Beatmaps.Where(cb => cb.ParentSetId == set.SetId).ToList();
+                
                 return set;
             }
         }

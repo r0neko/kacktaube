@@ -29,7 +29,7 @@ services:
       - 62011:5000
 
   elasticsearch:
-    image: bitnami/elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.0
     environment:
       - discovery.type=single-node
       - http.host=0.0.0.0
@@ -44,7 +44,7 @@ services:
       - pisstaube_back
     volumes:
       - ./data/logs/elastic/:/var/log/elasticsearch/
-      - ./data/elastic_data/:/bitnami/elasticsearch/data/
+      - elastic_data:/usr/share/elasticsearch/data
       - ./config/elasticsearch/elasticsearch.yml:/opt/bitnami/elasticsearch/config/elasticsearch.yml
     expose:
       - 9200
@@ -96,6 +96,10 @@ services:
       - 4001
       - 5001
 
+volumes:
+  elastic_data:
+    driver: local
+    
 networks:
   pisstaube_back:
     driver: bridge
