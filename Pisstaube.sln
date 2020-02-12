@@ -1,18 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pisstaube", "Pisstaube\Pisstaube.csproj", "{848FC267-B737-46B5-8432-D630A465EBB7}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "osu", "osu", "{04FDAF71-CC54-43AF-B179-7446A51B4FCD}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "osu.Game", "osu\osu.Game\osu.Game.csproj", "{1C267D61-5BD1-48C4-9B56-A16D6BA458BE}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "osu.Game.Rulesets.Catch", "osu\osu.Game.Rulesets.Catch\osu.Game.Rulesets.Catch.csproj", "{40E8FC37-3BCD-4980-9488-3A3E3487E351}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "osu.Game.Rulesets.Mania", "osu\osu.Game.Rulesets.Mania\osu.Game.Rulesets.Mania.csproj", "{1D50335D-E801-4810-A9B2-3D6D568D2111}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "osu.Game.Rulesets.Osu", "osu\osu.Game.Rulesets.Osu\osu.Game.Rulesets.Osu.csproj", "{51FD2E56-C436-4A29-9CF0-9A92D4E08983}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "osu.Game.Rulesets.Taiko", "osu\osu.Game.Rulesets.Taiko\osu.Game.Rulesets.Taiko.csproj", "{2A8748CE-A7CD-481D-948E-7D9BD3584430}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pisstaube", "Pisstaube\Pisstaube.csproj", "{0FD66543-DBA2-4CBE-8777-2C0DF1D39A1B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,36 +8,11 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{848FC267-B737-46B5-8432-D630A465EBB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{848FC267-B737-46B5-8432-D630A465EBB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{848FC267-B737-46B5-8432-D630A465EBB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{848FC267-B737-46B5-8432-D630A465EBB7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1C267D61-5BD1-48C4-9B56-A16D6BA458BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1C267D61-5BD1-48C4-9B56-A16D6BA458BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1C267D61-5BD1-48C4-9B56-A16D6BA458BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1C267D61-5BD1-48C4-9B56-A16D6BA458BE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{40E8FC37-3BCD-4980-9488-3A3E3487E351}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{40E8FC37-3BCD-4980-9488-3A3E3487E351}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{40E8FC37-3BCD-4980-9488-3A3E3487E351}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{40E8FC37-3BCD-4980-9488-3A3E3487E351}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1D50335D-E801-4810-A9B2-3D6D568D2111}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1D50335D-E801-4810-A9B2-3D6D568D2111}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1D50335D-E801-4810-A9B2-3D6D568D2111}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1D50335D-E801-4810-A9B2-3D6D568D2111}.Release|Any CPU.Build.0 = Release|Any CPU
-		{51FD2E56-C436-4A29-9CF0-9A92D4E08983}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{51FD2E56-C436-4A29-9CF0-9A92D4E08983}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{51FD2E56-C436-4A29-9CF0-9A92D4E08983}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{51FD2E56-C436-4A29-9CF0-9A92D4E08983}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2A8748CE-A7CD-481D-948E-7D9BD3584430}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2A8748CE-A7CD-481D-948E-7D9BD3584430}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2A8748CE-A7CD-481D-948E-7D9BD3584430}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2A8748CE-A7CD-481D-948E-7D9BD3584430}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FD66543-DBA2-4CBE-8777-2C0DF1D39A1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FD66543-DBA2-4CBE-8777-2C0DF1D39A1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FD66543-DBA2-4CBE-8777-2C0DF1D39A1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FD66543-DBA2-4CBE-8777-2C0DF1D39A1B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{1C267D61-5BD1-48C4-9B56-A16D6BA458BE} = {04FDAF71-CC54-43AF-B179-7446A51B4FCD}
-		{40E8FC37-3BCD-4980-9488-3A3E3487E351} = {04FDAF71-CC54-43AF-B179-7446A51B4FCD}
-		{1D50335D-E801-4810-A9B2-3D6D568D2111} = {04FDAF71-CC54-43AF-B179-7446A51B4FCD}
-		{51FD2E56-C436-4A29-9CF0-9A92D4E08983} = {04FDAF71-CC54-43AF-B179-7446A51B4FCD}
-		{2A8748CE-A7CD-481D-948E-7D9BD3584430} = {04FDAF71-CC54-43AF-B179-7446A51B4FCD}
 	EndGlobalSection
 EndGlobal

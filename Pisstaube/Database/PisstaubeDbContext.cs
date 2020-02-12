@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore;
 using Pisstaube.Database.Models;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
@@ -10,7 +10,7 @@ namespace Pisstaube.Database
     {
         public DbSet<BeatmapSet> BeatmapSet { get; set; }
         public DbSet<ChildrenBeatmap> Beatmaps { get; set; }
-
+        
         private static readonly bool[] Migrated = {false};
 
         public PisstaubeDbContext()
@@ -23,7 +23,7 @@ namespace Pisstaube.Database
                 Migrated[0] = true;
             }
         }
-
+        
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
@@ -38,7 +38,7 @@ namespace Pisstaube.Database
                 $"Server={host};Database={db};User={username};Password={password};Port={port};CharSet=utf8mb4;SslMode=none;",
                 mysqlOptions =>
                 {
-                    mysqlOptions.ServerVersion(new Version(10, 2, 15), ServerType.MariaDb);
+                    mysqlOptions.ServerVersion(new Version(10, 4, 12), ServerType.MariaDb);
                     mysqlOptions.CharSet(CharSet.Utf8Mb4);
                 }
             );

@@ -7,19 +7,19 @@ namespace Pisstaube.Allocation
 { 
     public class IpfsCache 
     { 
-        private readonly Storage _storage; 
-        private readonly IpfsClient _ipfs = new IpfsClient(Environment.GetEnvironmentVariable("IPFS_HOST")); 
+        private readonly Storage storage; 
+        private readonly IpfsClient ipfs = new IpfsClient(Environment.GetEnvironmentVariable("IPFS_HOST")); 
  
         public IpfsCache(Storage storage) 
         { 
-            _storage = storage; 
+            this.storage = storage; 
         } 
          
         public async Task<string> CacheFile(string path) 
         { 
             try 
             { 
-                var fileInfo = await _ipfs.FileSystem.AddFileAsync(_storage.GetFullPath(path)); 
+                var fileInfo = await ipfs.FileSystem.AddFileAsync(storage.GetFullPath(path)); 
              
                 return fileInfo?.Id.Hash.ToBase58(); 
             } 

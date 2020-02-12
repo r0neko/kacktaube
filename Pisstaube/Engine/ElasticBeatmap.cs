@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore.Internal;
 using Nest;
 using osu.Game.Beatmaps;
 using Pisstaube.Database.Models;
-using Pisstaube.Enums;
 
 namespace Pisstaube.Engine
 {
@@ -25,7 +24,7 @@ namespace Pisstaube.Engine
         public double ApprovedDate;
 
         public override string ToString() =>
-            $"SetId: {Id}\n" +
+            $"\nSetId: {Id}\n" +
             $"RankedStatus: {RankedStatus}\n" +
             $"Artist: {Artist}\n" +
             $"Title: {Title}\n" +

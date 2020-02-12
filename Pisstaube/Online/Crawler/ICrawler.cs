@@ -1,15 +1,15 @@
-using Pisstaube.Database;
+using System.Threading.Tasks;
 
-namespace Pisstaube.Online.Crawler
+namespace Pisstaube.Crawler
 {
     public interface ICrawler
     {
         int LatestId { get; }
         bool IsCrawling { get; }
 
-        void BeginCrawling();
+        void Start();
         void Stop();
         void Wait();
-        bool Crawl(int id, PisstaubeDbContext context);
+        Task<bool> Crawl(int id);
     }
 }

@@ -3,44 +3,46 @@ using System.Threading;
 
 namespace Pisstaube.Utils
 {
+    /// <summary>
+    /// a Request Limiter to prevent overflowing osu!API V2 with tons of API Requests.
+    /// </summary>
     public class RequestLimiter
     {
-        private readonly int _requestAmount;
-        private readonly TimeSpan _howLong;
-        private DateTime _dt;
-        private DateTime _dtNext;
+        private readonly int requestAmount;
+        private readonly TimeSpan howLong;
+        private DateTime dtLast;
+        private DateTime dtNext;
 
-        private int _req;
+        private int req;
 
         public RequestLimiter(int requestAmount, TimeSpan howLong)
         {
-            _requestAmount = requestAmount - 1;
-            _howLong = howLong;
-            _dt = DateTime.Now;
-            _dtNext = DateTime.Now;
+            this.requestAmount = requestAmount - 1;
+            this.howLong = howLong;
+            dtLast = DateTime.Now;
+            dtNext = DateTime.Now;
 
-            _dtNext += howLong;
+            dtNext += howLong;
         }
 
+        /// <summary>
+        /// Limits the current Request Count (freezes Thread until the Timeout is over)
+        /// </summary>
         public void Limit()
         {
-            if (_dt > _dtNext)
+            if (dtLast > dtNext)
             {
-                _req = 1;
+                req = 1;
 
-                _dtNext = DateTime.Now;
-                _dtNext += _howLong;
+                dtNext = DateTime.Now;
+                dtNext += howLong;
             }
 
-            if (_req > _requestAmount)
-                if (_dtNext.Subtract(_dt).TotalMilliseconds > 0)
-                {
-                    Console.WriteLine(_dtNext.Subtract(_dt).TotalMilliseconds);
-                    Thread.Sleep(_dtNext.Subtract(_dt));
-                }
+            if (req > requestAmount && dtNext.Subtract(dtLast).TotalMilliseconds > 0)
+                Thread.Sleep(dtNext.Subtract(dtLast));
 
-            _req++;
-            _dt = DateTime.Now;
+            req++;
+            dtLast = DateTime.Now;
         }
     }
 }

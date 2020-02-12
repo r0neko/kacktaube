@@ -1,113 +1,55 @@
-using System;
-using System.IO;
+﻿using System;
+using System.Threading;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using osu.Framework.Development;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
 using osu.Game.Configuration;
 using osu.Game.Database;
 using osu.Game.IO;
 using osu.Game.Online.API;
-using osu.Game.Rulesets;
 using Pisstaube.Allocation;
 using Pisstaube.CacheDb;
+using Pisstaube.Crawler;
 using Pisstaube.Database;
 using Pisstaube.Engine;
 using Pisstaube.Online;
 using Pisstaube.Online.Crawler;
 using Pisstaube.Utils;
-using StatsdClient;
-using Utf8Json;
-using Utf8Json.Resolvers;
 
 namespace Pisstaube
 {
     public class Startup
     {
+        private readonly Storage dataStorage = new NativeStorage("data");
+        private readonly DatabaseContextFactory _osuContextFactory;
+        
+        public ILifetimeScope AutofacContainer { get; private set; }
+        
         // ReSharper disable once UnusedParameter.Local
         public Startup(IConfiguration configuration)
         {
-            _dataStorage = new NativeStorage("data");
-            _osuContextFactory = new DatabaseContextFactory(_dataStorage);
-            _cacheContextFactory = new PisstaubeCacheDbContextFactory(_dataStorage);
-            _dbContextFactory = new PisstaubeDbContextFactory();
-
-            // copy paste of OsuGameBase.cs
-            try
-            {
-                using (var db = _dbContextFactory.GetForWrite(false))
-                    db.Context.Database.Migrate();
-
-                using (var db = _osuContextFactory.GetForWrite(false))
-                    db.Context.Migrate();
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e.InnerException ?? e, "Migration failed! We'll be starting with a fresh database.",
-                    LoggingTarget.Database);
-                _osuContextFactory.ResetDatabase();
-                Logger.Log("Database purged successfully.", LoggingTarget.Database);
-                using (var db = _osuContextFactory.GetForWrite(false))
-                    db.Context.Migrate();
-            }
-
-            // copy paste of OsuGameBase.cs
-            try
-            {
-                using (var db = _cacheContextFactory.GetForWrite(false))
-                    db.Context.Migrate();
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e.InnerException ?? e, "Migration failed! We'll be starting with a fresh database.",
-                    LoggingTarget.Database);
-                _cacheContextFactory.ResetDatabase();
-                Logger.Log("Database purged successfully.", LoggingTarget.Database);
-                using (var db = _cacheContextFactory.GetForWrite(false))
-                    db.Context.Migrate();
-            }
+            _osuContextFactory = new DatabaseContextFactory(dataStorage);
         }
-
-        private readonly DatabaseContextFactory _osuContextFactory;
+        
+        
         private readonly PisstaubeCacheDbContextFactory _cacheContextFactory;
-        private readonly PisstaubeDbContextFactory _dbContextFactory;
-        private readonly NativeStorage _dataStorage;
 
-        // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
+        public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            services
-                .AddDbContext<PisstaubeDbContext>();
-
-            services.AddMemoryCache();
-
-            services
-                .AddSingleton<Cache>()
-                .AddSingleton<BeatmapUpdater>()
-                .AddSingleton<PisstaubeDbContext>()
-                .AddSingleton<BeatmapSearchEngine>()
-                .AddSingleton<Storage>(_dataStorage)
-                .AddSingleton(_cacheContextFactory)
-                .AddSingleton(_dbContextFactory)
-                .AddSingleton<OsuConfigManager>()
-                .AddSingleton<APIAccess>()
-                .AddSingleton<Cleaner>()
-                .AddSingleton(new FileStore(_osuContextFactory, _dataStorage))
-                .AddSingleton(new RulesetStore(_osuContextFactory))
-                .AddSingleton<BeatmapDownloader>()
-                .AddSingleton<Crawler>()
-                .AddSingleton<SetDownloader>()
-                .AddSingleton<IpfsCache>()
-                .AddSingleton(new RequestLimiter(1200, TimeSpan.FromMinutes(1)))
-                .AddSingleton<Kaesereibe>();
-
+            services.AddOptions();
+            services.AddRouting();
+            services.AddHealthChecks();
+            
             services
                 .AddMvc(
                     options =>
@@ -116,67 +58,84 @@ namespace Pisstaube
                         options.EnableEndpointRouting = false;
                     })
                 .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
-
-            services.Configure<FormOptions>(x =>
-            {
-                x.ValueLengthLimit = int.MaxValue;
-                x.MultipartBodyLengthLimit = int.MaxValue;
-            });
-
+            
             services.AddRouting();
             
-            JsonUtil.Initialize();
+            var builder = new ContainerBuilder();
+            
+            builder.Populate(services);
+            builder.RegisterType<OsuCrawler>().AsSelf().As<ICrawler>().SingleInstance();
+            builder.RegisterType<DatabaseHouseKeeper>().SingleInstance();
+            
+            builder.RegisterType<Cache>().SingleInstance();
+            builder.RegisterType<IpfsCache>().SingleInstance();
+            
+            builder.RegisterInstance(new RequestLimiter(1200, TimeSpan.FromMinutes(1)));
+            builder.RegisterInstance(dataStorage).As<Storage>();
+            builder.RegisterInstance(_osuContextFactory).As<IDatabaseContextFactory>();
+            builder.RegisterType<FileStore>();
+            builder.RegisterType<PisstaubeDbContext>().InstancePerDependency();
+            builder.RegisterType<PisstaubeDbContext>().InstancePerDependency();
+            builder.RegisterType<PisstaubeCacheDbContextFactory>().AsSelf();
+            builder.RegisterType<SetDownloader>().AsSelf();
+            builder.RegisterType<SmartStorage>().AsSelf();
+
+            builder.RegisterType<BeatmapSearchEngine>().As<IBeatmapSearchEngineProvider>();
+            builder.RegisterType<BeatmapDownloader>();
+
+            builder.RegisterType<OsuConfigManager>();
+            builder.RegisterType<APIAccess>().As<IAPIProvider>().SingleInstance();
+
+            AutofacContainer = builder.Build();
+            
+            return new AutofacServiceProvider(AutofacContainer);
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+
+        [UsedImplicitly]
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
-            Crawler crawler, APIAccess apiv2, Kaesereibe reibe, BeatmapSearchEngine searchEngine,
-            BeatmapUpdater beatmapUpdater)
+            ICrawler crawler, IAPIProvider apiProvider, DatabaseHouseKeeper houseKeeper)
         {
-            if (Environment.GetEnvironmentVariable("LOG_LEVEL") != null)
-                if (Enum.TryParse(Environment.GetEnvironmentVariable("LOG_LEVEL"), out LogLevel level))
-                    Logger.Level = level;
+            Logger.Enabled = true;
+            Logger.Level = LogLevel.Debug;
+            Logger.GameIdentifier = "Pisstaube";
+            Logger.Storage = dataStorage.GetStorageForDirectory("logs");
+            
+            JsonUtil.Initialize();
 
-            Logger.Storage = _dataStorage.GetStorageForDirectory("logs");
+            apiProvider.Login(Environment.GetEnvironmentVariable("OSU_USERNAME"),
+                Environment.GetEnvironmentVariable("OSU_PASSWORD"));
 
-            if (env.IsDevelopment())
+            GlobalConfig.EnableCrawling = Environment.GetEnvironmentVariable("CRAWLER_DISABLED")?.ToLowerInvariant() == "false";
+            GlobalConfig.EnableUpdating = Environment.GetEnvironmentVariable("UPDATER_DISABLED")?.ToLowerInvariant() == "false";
+            
+            while (true)
+            {
+                if (!apiProvider.IsLoggedIn)
+                {
+                    Logger.LogPrint("Not Logged in yet...");
+                    Thread.Sleep(1000);
+                    //continue;
+                }
+                if (apiProvider.State == APIState.Failing)
+                {   
+                    Logger.LogPrint($"Failed to Login using Username {Environment.GetEnvironmentVariable("OSU_USERNAME")}", LoggingTarget.Network, LogLevel.Error);
+                    Environment.Exit(1);
+                }
+
+                break;
+            }
+
+            if (DebugUtils.IsDebugBuild)
                 app.UseDeveloperExceptionPage();
             else
                 app.UseHsts();
-
-            if (!searchEngine.Ping())
-            {
-                Logger.LogPrint("Failed to Connect to ElasticSearch!", LoggingTarget.Network, LogLevel.Error);
-                Environment.Exit(0);
-            }
-
-            apiv2.Login(Environment.GetEnvironmentVariable("OSU_EMAIL"),
-                Environment.GetEnvironmentVariable("OSU_PASSWORD"));
-
-            DogStatsd.Configure(new StatsdConfig {Prefix = "pisstaube"});
-
-            DogStatsd.ServiceCheck("crawler.is_crawling", Status.UNKNOWN);
-
-            if (Environment.GetEnvironmentVariable("CRAWLER_DISABLED") != "true")
-                crawler.BeginCrawling();
-            else
-                DogStatsd.ServiceCheck("crawler.is_crawling", Status.CRITICAL);
-
-            if (Environment.GetEnvironmentVariable("CHEESEGULL_CRAWLER_DISABLED") != "true")
-                reibe.BeginCrawling();
-            else
-                DogStatsd.ServiceCheck("kaesereibe.is_crawling", Status.CRITICAL);
-
-            if (!Directory.Exists("data"))
-                Directory.CreateDirectory("data");
-
-            if (!Directory.Exists("data/cache"))
-                Directory.CreateDirectory("data/cache");
-
-            DogStatsd.ServiceCheck("is_active", Status.OK);
-
-            if (Environment.GetEnvironmentVariable("UPDATER_DISABLED") != "true")
-                beatmapUpdater.BeginUpdaterAsync();
+            
+            if (GlobalConfig.EnableCrawling)
+                crawler.Start();
+            
+            if (GlobalConfig.EnableUpdating)
+                houseKeeper.Start();
 
             app.UseMvc(routes => routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}"));
         }

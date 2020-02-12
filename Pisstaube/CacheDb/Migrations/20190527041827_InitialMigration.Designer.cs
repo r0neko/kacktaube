@@ -20,7 +20,7 @@ namespace Pisstaube.CacheDb.Migrations
             modelBuilder
                 .HasAnnotation ("ProductVersion", "2.2.4-servicing-10062");
 
-            modelBuilder.Entity ("Pisstaube.CacheDb.Models.CacheBeatmapSet", b =>
+            modelBuilder.Entity ("olPisstaube.CacheDb.Models.CacheBeatmapSet", b =>
             {
                 b.Property<int> ("SetId")
                     .ValueGeneratedOnAdd ( );

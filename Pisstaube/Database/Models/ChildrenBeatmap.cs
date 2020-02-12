@@ -2,15 +2,21 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.Serialization;
-using Newtonsoft.Json;
 using osu.Game.Beatmaps;
-using Pisstaube.Enums;
-using Pisstaube.Utils;
 
 namespace Pisstaube.Database.Models
 {
+    public enum PlayMode
+    {
+        Default,
+        Taiko,
+        CatchTheBeat,
+        Mania,
+        All
+    }
+    
     [Serializable]
-    public class ChildrenBeatmap : ISerializer
+    public class ChildrenBeatmap
     {
         [Key]
         [Required]
@@ -105,43 +111,6 @@ namespace Pisstaube.Database.Models
                                     $"{(int) MathF.Floor(TotalLength) / 60}m" +
                                     $"{TotalLength % 60}s)@" +
                                     $"{(int) Mode},";
-
-        public void ReadFromStream(MStreamReader sr)
-        {
-            BeatmapId = sr.ReadInt32();
-            ParentSetId = sr.ReadInt32();
-            DiffName = sr.ReadString();
-            FileMd5 = sr.ReadString();
-            Mode = (PlayMode) sr.ReadSByte();
-            Bpm = sr.ReadInt32();
-            Ar = sr.ReadSingle();
-            Od = sr.ReadSingle();
-            Cs = sr.ReadSingle();
-            Hp = sr.ReadSingle();
-            TotalLength = sr.ReadInt32();
-            Playcount = sr.ReadInt32();
-            Passcount = sr.ReadInt32();
-            MaxCombo = sr.ReadInt64();
-            DifficultyRating = sr.ReadDouble();
-        }
-
-        public void WriteToStream(MStreamWriter sw)
-        {
-            sw.Write(BeatmapId);
-            sw.Write(ParentSetId);
-            sw.Write(DiffName, true);
-            sw.Write(FileMd5, true);
-            sw.Write((sbyte) Mode);
-            sw.Write(Bpm);
-            sw.Write(Ar);
-            sw.Write(Od);
-            sw.Write(Cs);
-            sw.Write(Hp);
-            sw.Write(TotalLength);
-            sw.Write(Playcount);
-            sw.Write(Passcount);
-            sw.Write(MaxCombo);
-            sw.Write(DifficultyRating);
-        }
+        
     }
 }

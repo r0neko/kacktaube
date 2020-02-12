@@ -40,8 +40,8 @@ namespace Pisstaube.Online
 
             FileInfo info;
             using (var f = _tmpStorage.GetStream(beatmap.BeatmapId.ToString(), FileAccess.Read, FileMode.Open))
-            using (var db = _cache.GetForWrite())
             {
+                using var db = _cache.GetForWrite();
                 info = _store.Add(f);
 
                 if (db.Context.CacheBeatmaps.Any(bm => bm.BeatmapId == beatmap.BeatmapId))

@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-using System.Text;
-using Utf8Json;
+﻿using Utf8Json;
 using Utf8Json.Formatters;
 using Utf8Json.Resolvers;
 
@@ -22,7 +20,7 @@ namespace Pisstaube.Utils
         
         public static string Serialize<T>(T obj)
         {
-            var serializedData = Utf8Json.JsonSerializer.ToJsonString(
+            var serializedData = JsonSerializer.ToJsonString(
                 obj
             );
     

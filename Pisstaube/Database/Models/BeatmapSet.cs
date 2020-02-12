@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Runtime.Serialization;
-using Newtonsoft.Json;
 using osu.Game.Beatmaps;
-using Pisstaube.Utils;
 
 namespace Pisstaube.Database.Models
 {
@@ -39,7 +38,7 @@ namespace Pisstaube.Database.Models
     }
 
     [Serializable]
-    public class BeatmapSet : ISerializer
+    public class BeatmapSet
     {
         [Required]
         [Key]
@@ -95,9 +94,8 @@ namespace Pisstaube.Database.Models
                 Tags = info.Metadata.Tags,
                 HasVideo = info.OnlineInfo.HasVideo,
                 ChildrenBeatmaps = new List<ChildrenBeatmap>(),
-                // Obsolete!
-                Genre = Genre.Any,
-                Language = Language.Any
+                Genre = (Genre) (info.OnlineInfo.Genre.Id ?? (int) Genre.Any),
+                Language = (Language) info.OnlineInfo.Language.Id
             };
 
             foreach (var map in info.Beatmaps)
@@ -108,88 +106,30 @@ namespace Pisstaube.Database.Models
 
         public string ToDirect()
         {
-            string retStr;
-
-            double maxDiff = 0;
-
-            foreach (var cbm in ChildrenBeatmaps)
-                if (cbm.DifficultyRating > maxDiff)
-                    maxDiff = cbm.DifficultyRating;
+            var maxDiff = ChildrenBeatmaps
+                .Select(cbm => cbm.DifficultyRating)
+                .Concat(new double[] {0})
+                .Max();
 
             maxDiff *= 1.5;
 
-            retStr = $"{SetId}.osz|" +
-                     $"{Artist}|" +
-                     $"{Title}|" +
-                     $"{Creator}|" +
-                     $"{(int) RankedStatus}|" +
-                     $"{maxDiff:0.00}|" +
-                     $"{LastUpdate}Z|" +
-                     $"{SetId}|" +
-                     $"{SetId}|" +
-                     "0|" +
-                     "1234|" +
-                     $"{Convert.ToInt32(HasVideo)}|" +
-                     $"{Convert.ToInt32(HasVideo) * 4321}|";
+            var retStr = $"{SetId}.osz|" +
+                         $"{Artist}|" +
+                         $"{Title}|" +
+                         $"{Creator}|" +
+                         $"{(int) RankedStatus}|" +
+                         $"{maxDiff:0.00}|" +
+                         $"{LastUpdate}Z|" +
+                         $"{SetId}|" +
+                         $"{SetId}|" +
+                         "0|" +
+                         "1234|" +
+                         $"{Convert.ToInt32(HasVideo)}|" +
+                         $"{Convert.ToInt32(HasVideo) * 4321}|";
 
-            foreach (var cb in ChildrenBeatmaps)
-                retStr += cb.ToDirect();
+            retStr = ChildrenBeatmaps.Aggregate(retStr, (current, cb) => current + cb.ToDirect());
 
             return retStr.TrimEnd(',') + "|\r\n";
-        }
-
-        public void ReadFromStream(MStreamReader sr)
-        {
-            SetId = sr.ReadInt32();
-
-            var count = sr.ReadInt32();
-            ChildrenBeatmaps = new List<ChildrenBeatmap>();
-            for (var i = 0; i < count; i++)
-                ChildrenBeatmaps.Add(sr.ReadData<ChildrenBeatmap>());
-
-            RankedStatus = (BeatmapSetOnlineStatus) sr.ReadSByte();
-
-            if (DateTime.TryParse(sr.ReadString(), out var res))
-                ApprovedDate = res;
-
-            if (DateTime.TryParse(sr.ReadString(), out res))
-                LastUpdate = res;
-
-            if (DateTime.TryParse(sr.ReadString(), out res))
-                LastChecked = res;
-
-            Artist = sr.ReadString();
-            Title = sr.ReadString();
-            Creator = sr.ReadString();
-            Source = sr.ReadString();
-            Tags = sr.ReadString();
-            HasVideo = sr.ReadBoolean();
-            Genre = (Genre) sr.ReadSByte();
-            Language = (Language) sr.ReadSByte();
-            Favourites = sr.ReadInt64();
-            Disabled = sr.ReadBoolean();
-        }
-
-        public void WriteToStream(MStreamWriter sw)
-        {
-            sw.Write(SetId);
-            sw.Write(ChildrenBeatmaps.Count);
-            foreach (var bm in ChildrenBeatmaps)
-                sw.Write(bm);
-            sw.Write((sbyte) RankedStatus);
-            sw.Write(ApprovedDate?.ToString(), true);
-            sw.Write(LastUpdate?.ToString(), true);
-            sw.Write(LastChecked?.ToString(), true);
-            sw.Write(Artist, true);
-            sw.Write(Title, true);
-            sw.Write(Creator, true);
-            sw.Write(Source, true);
-            sw.Write(Tags, true);
-            sw.Write(HasVideo);
-            sw.Write((sbyte) Genre);
-            sw.Write((sbyte) Language);
-            sw.Write(Favourites);
-            sw.Write(Disabled);
         }
     }
 }

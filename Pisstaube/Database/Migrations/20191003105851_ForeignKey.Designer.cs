@@ -21,7 +21,7 @@ namespace Pisstaube.Database.Migrations
                 .HasAnnotation ("ProductVersion", "2.2.6-servicing-10079")
                 .HasAnnotation ("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity ("Pisstaube.Database.Models.BeatmapSet", b =>
+            modelBuilder.Entity ("olPisstaube.Database.Models.BeatmapSet", b =>
             {
                 b.Property<int> ("SetId")
                     .ValueGeneratedOnAdd ( );
@@ -59,7 +59,7 @@ namespace Pisstaube.Database.Migrations
                 b.ToTable ("BeatmapSet");
             });
 
-            modelBuilder.Entity ("Pisstaube.Database.Models.ChildrenBeatmap", b =>
+            modelBuilder.Entity ("olPisstaube.Database.Models.ChildrenBeatmap", b =>
             {
                 b.Property<int> ("BeatmapId")
                     .ValueGeneratedOnAdd ( );
@@ -101,9 +101,9 @@ namespace Pisstaube.Database.Migrations
                 b.ToTable ("Beatmaps");
             });
 
-            modelBuilder.Entity ("Pisstaube.Database.Models.ChildrenBeatmap", b =>
+            modelBuilder.Entity ("olPisstaube.Database.Models.ChildrenBeatmap", b =>
             {
-                b.HasOne ("Pisstaube.Database.Models.BeatmapSet", "Parent")
+                b.HasOne ("olPisstaube.Database.Models.BeatmapSet", "Parent")
                     .WithMany ("ChildrenBeatmaps")
                     .HasForeignKey ("ParentSetId")
                     .OnDelete (DeleteBehavior.Cascade);

@@ -1,7 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Amib.Threading;
 using Elasticsearch.Net;
 using Microsoft.EntityFrameworkCore;
 using Nest;
@@ -9,23 +8,20 @@ using osu.Framework.Logging;
 using osu.Game.Beatmaps;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
-using Pisstaube.Enums;
 using LogLevel = osu.Framework.Logging.LogLevel;
 
 namespace Pisstaube.Engine
 {
-    public class BeatmapSearchEngine
+    public class BeatmapSearchEngine : IBeatmapSearchEngineProvider
     {
-        private readonly PisstaubeDbContextFactory _contextFactory;
-        private readonly ElasticClient _elasticClient;
-        private readonly SmartThreadPool _pool;
+        private readonly PisstaubeDbContext dbContext;
+        private readonly object dbContextMutex = new object();
+        private readonly ElasticClient elasticClient;
 
-        public BeatmapSearchEngine(PisstaubeDbContextFactory contextFactory)
+        public BeatmapSearchEngine(PisstaubeDbContext dbContext)
         {
-            _contextFactory = contextFactory;
-            _pool = new SmartThreadPool {MaxThreads = Environment.ProcessorCount * 4};
-            _pool.Start();
-
+            this.dbContext = dbContext;
+            
             var settings = new ConnectionSettings(
                     new Uri(
                         $"http://{Environment.GetEnvironmentVariable("ELASTIC_HOSTNAME")}:{Environment.GetEnvironmentVariable("ELASTIC_PORT")}"
@@ -38,47 +34,10 @@ namespace Pisstaube.Engine
                 .EnableHttpCompression()
                 .DefaultIndex("pisstaube");
 
-            _elasticClient = new ElasticClient(settings);
+            elasticClient = new ElasticClient(settings);
         }
 
-        public bool Ping()
-        {
-            var r = _elasticClient.Ping();
-            
-            if (r.IsValid) // This is getting called once anyway so LETS put this here.
-            { // If Ping was successfully, create Pisstaube Index if not Exists!
-                var existReq = new IndexExistsRequest("pisstaube");
-                if (_elasticClient.Indices.Exists(existReq).Exists)
-                    return r.IsValid;
-                
-                var createReq = new CreateIndexRequest("pisstaube");
-                var createRes = _elasticClient.Indices.Create(createReq);
-                if (!createRes.Acknowledged)
-                    Logger.Error(createRes.OriginalException, "Failed to create Index", LoggingTarget.Database);
-            }
-            
-            return r.IsValid;
-        }
-        
-        public void RIndexBeatmap(BeatmapSet set)
-        {
-            //if (xi++ % 10000 == 0)
-            Logger.LogPrint($"Index ElasticBeatmap of Id {set.SetId}");
-
-            _elasticClient.DeleteByQuery<ElasticBeatmap>(
-                x =>
-                    x.Query(query => query.Exists(exists => exists.Field(field => field.Id == set.SetId)))
-            );
-            var map = ElasticBeatmap.GetElasticBeatmap(set);
-
-            //Logger.LogPrint($"Index ElasticBeatmap of Id {set.SetId}");
-
-            var result = _elasticClient.IndexDocument(map);
-            if (!result.IsValid)
-                Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
-        }
-
-        public void RIndexBeatmap(IEnumerable<BeatmapSet> sets)
+        public void Index(IEnumerable<BeatmapSet> sets)
         {
             var elasticBeatmaps = sets.Select(ElasticBeatmap.GetElasticBeatmap).ToList();
 
@@ -89,43 +48,21 @@ namespace Pisstaube.Engine
 
                 // Delete if exists.
                 Logger.LogPrint($"Deleting chunk {c + truncatedBeatmaps.Count} from ElasticSearch");
-                var res = _elasticClient.DeleteMany(truncatedBeatmaps);
+                elasticClient.DeleteMany(truncatedBeatmaps);
+                /* var res = // Ignore errors for DeleteMany.
                 if (!res.IsValid)
                     Logger.LogPrint(res.DebugInformation);
+                */
                 
                 Logger.LogPrint($"Submitting chunk {c + truncatedBeatmaps.Count}");
-                var result = _elasticClient.IndexMany(elasticBeatmaps); // Index all truncated maps at once.
+                var result = elasticClient.IndexMany(elasticBeatmaps); // Index all truncated maps at once.
                 if (!result.IsValid)
                     Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
                 
                 c += truncatedBeatmaps.Count;
             }
         }
-
-        public void IndexBeatmap(BeatmapSet set)
-        {
-            _pool.QueueWorkItem(RIndexBeatmap, set);
-        }
         
-        public void DeleteAllBeatmaps()
-        {
-            Logger.LogPrint("Deleting all Beatmaps from ElasticSearch!");
-            _elasticClient.DeleteByQuery<ElasticBeatmap>(x => x.MatchAll());
-        }
-
-        public void DeleteBeatmap(int setId)
-        {
-            _elasticClient.DeleteByQuery<ElasticBeatmap>(x => x.Query(q =>
-                q.Bool(b =>
-                    b.Must(m =>
-                        m.Term(t =>
-                            t.Field(bm => bm.Id).Value(setId)
-                        )
-                    )
-                )
-            ));
-        }
-
         public IEnumerable<BeatmapSet> Search(string query,
             int amount = 50,
             int offset = 0,
@@ -134,18 +71,23 @@ namespace Pisstaube.Engine
         {
             if (amount > 50 || amount <= -1)
                 amount = 50;
-
-            IEnumerable<BeatmapSet> sets = new List<BeatmapSet>();
-
-            if (!string.IsNullOrWhiteSpace(query))
+            
+            var result = elasticClient.Search<ElasticBeatmap>(s =>
             {
-                var result = _elasticClient.Search<ElasticBeatmap>(s =>
+                var ret = s
+                    .From(offset)
+                    .Size(amount);
+
+                if (query == "") {
+                    ret = ret
+                        .MinScore(0)
+                        .Aggregations(a => a.Max("ApprovedDate", f => f.Field(v => v.ApprovedDate)));
+                }
+                else
                 {
-                    var ret = s
-                        .From(offset)
-                        .Size(amount)
-                        .MinScore(5)
-                        .Query(q =>
+                    ret = ret.MinScore(5);
+                }
+                ret = ret.Query(q =>
                             q.Bool(b => b
                                 .Must(must =>
                                 {
@@ -175,68 +117,47 @@ namespace Pisstaube.Engine
                                     return res;
                                 })
                                 .Should(should =>
-                                    should.Match(match => match.Field(p => p.Creator).Query(query).Boost(2)) ||
-                                    should.Match(match => match.Field(p => p.Artist).Query(query).Boost(3)) ||
-                                    should.Match(match => match.Field(p => p.DiffName).Query(query).Boost(.9)) ||
-                                    should.Match(match => match.Field(p => p.Tags).Query(query).Boost(.9)) ||
-                                    should.Match(match => match.Field(p => p.Title).Query(query).Boost(3))
+                                    {
+                                        var res =
+                                            should.Match(match => match.Field(p => p.Creator).Query(query).Boost(2)) ||
+                                            should.Match(match => match.Field(p => p.Artist).Query(query).Boost(3)) ||
+                                            should.Match(match => match.Field(p => p.DiffName).Query(query).Boost(.9)) ||
+                                            should.Match(match => match.Field(p => p.Tags).Query(query).Boost(.9)) ||
+                                            should.Match(match => match.Field(p => p.Title).Query(query).Boost(3));
+
+                                        if (query == "")
+                                            res = should;
+
+                                        return res;
+                                    }
+
                                 )
                             )
                         );
-                    Logger.LogPrint(_elasticClient.RequestResponseSerializer.SerializeToString(ret),
-                        LoggingTarget.Network, LogLevel.Debug);
-                    return ret;
-                });
-
-                if (!result.IsValid)
-                {
-                    Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
-                    return null;
-                }
-
-                var r = result.Hits.Select(
-                    hit => hit != null
-                        ? _contextFactory.Get().BeatmapSet.FirstOrDefault(set => set.SetId == hit.Source.Id)
-                        : null
-                );
-                sets = r;
-
-                var newSets = new List<BeatmapSet>();
-
-                foreach (var s in sets.Where(s => s != null))
-                {
-                    newSets.Add(s);
-                    if (s.ChildrenBeatmaps == null)
-                        s.ChildrenBeatmaps = _contextFactory.Get().Beatmaps.Where(cb => cb.ParentSetId == s.SetId)
-                            .ToList();
-                }
-
-                sets = newSets;
-            }
-            else
-            {
-                var ctx = _contextFactory.Get();
-                var xSets = ctx.BeatmapSet
-                    .Where(
-                        set => (
-                                   rankedStatus == null || set.RankedStatus == rankedStatus
-                               ) &&
-                               ctx.Beatmaps.Where(
-                                       cb => cb.ParentSetId == set.SetId
-                                   )
-                                   .FirstOrDefault(
-                                       cb => mode == PlayMode.All || cb.Mode == mode
-                                   ) != null
-                    )
-                    .OrderByDescending(x => x.ApprovedDate)
-                    .Skip(offset)
-                    .Take(amount)
-                    .Include(at => at.ChildrenBeatmaps);
                 
-                sets = xSets;
-            }
+                Logger.LogPrint(elasticClient.RequestResponseSerializer.SerializeToString(ret), LoggingTarget.Network, LogLevel.Debug);
+                
+                return ret;
+            });
 
-            foreach (var s in sets)
+            if (!result.IsValid)
+            {
+                Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
+                return null;
+            }
+            
+            var r = new List<BeatmapSet>();
+            lock (dbContextMutex)
+            {
+                r.AddRange(from hit in result.Hits
+                    where hit != null
+                    select dbContext.BeatmapSet.Include(o => o.ChildrenBeatmaps)
+                        .FirstOrDefault(o => o.SetId == hit.Source.Id));
+            }
+            
+            var sets = new List<BeatmapSet>();
+            
+            foreach (var s in r)
             {
                 // Fixes an Issue where osu!direct may not load!
                 s.Artist = s.Artist.Replace("|", "");
@@ -245,6 +166,8 @@ namespace Pisstaube.Engine
 
                 foreach (var bm in s.ChildrenBeatmaps)
                     bm.DiffName = bm.DiffName.Replace("|", "");
+                
+                sets.Add(s);
             }
 
             return sets;

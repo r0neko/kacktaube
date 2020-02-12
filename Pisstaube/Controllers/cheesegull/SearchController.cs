@@ -2,30 +2,26 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using osu.Framework.Logging;
 using osu.Game.Beatmaps;
 using Pisstaube.Allocation;
+using Pisstaube.Database.Models;
 using Pisstaube.Engine;
-using Pisstaube.Enums;
 using Pisstaube.Utils;
-using StatsdClient;
 
-namespace Pisstaube.Controllers
+namespace Pisstaube.Controllers.cheesegull
 {
-    [Route("api/[controller]")]
+    [Route("api/cheesegull/[controller]")]
     [ApiController]
     public class SearchController : ControllerBase
     {
-        private readonly BeatmapSearchEngine _searchEngine;
-        private readonly Cache _cache;
+        private readonly IBeatmapSearchEngineProvider searchEngine;
+        private readonly Cache cache;
 
-        public SearchController(BeatmapSearchEngine searchEngine, Cache cache)
+        public SearchController(IBeatmapSearchEngineProvider searchEngine, Cache cache)
         {
-            _searchEngine = searchEngine;
-            _cache = cache;
+            this.searchEngine = searchEngine;
+            this.cache = cache;
         }
 
         private bool GetTryFromQuery<T>(IEnumerable<string> keys, T def, out T val)
@@ -70,9 +66,8 @@ namespace Pisstaube.Controllers
             GetTryFromQuery(new[] {"amount", "a"}, 100, out var amount);
             GetTryFromQuery(new[] {"offset", "o"}, 0, out var offset);
             GetTryFromQuery(new[] {"page", "p"}, 0, out var page);
-            GetTryFromQuery(new[] {"mode", "m"}, 0, out var mode);
+            GetTryFromQuery(new[] {"mode", "m"}, PlayMode.All, out var mode);
             GetTryFromQuery(new[] {"status", "r"}, null, out int? r);
-            GetTryFromQuery(new[] {"ruri", "ru"}, false, out var ruri);
 
             BeatmapSetOnlineStatus? status = null;
             if (r != null)
@@ -87,18 +82,19 @@ namespace Pisstaube.Controllers
 
             var ha = query + amount + offset + status + mode + page + raw;
 
-            if (_cache.TryGet(ha, out string ca))
+            if (cache.TryGet(ha, out string ca))
                 return ca;
 
-            var result = _searchEngine.Search(query, amount, offset, status, (PlayMode) mode);
+            var result = searchEngine.Search(query, amount, offset, status, (PlayMode) mode);
 
-            DogStatsd.Increment("beatmap.searches");
+            //DogStatsd.Increment("beatmap.searches");
 
-            if (result?.Count() == 0) result = null; // Cheesegull logic ^^,
+            var beatmapSets = result as BeatmapSet[] ?? result.ToArray();
+            if (beatmapSets.Length == 0) result = null; // Cheesegull logic ^^,
 
             if (!raw)
             {
-                ca = JsonUtil.Serialize(result);
+                ca = JsonUtil.Serialize(beatmapSets);
             }
             else
             {
@@ -111,15 +107,15 @@ namespace Pisstaube.Controllers
 
                 ca = string.Empty;
 
-                ca += result.Count() >= 100 ? "101" : result.Count().ToString();
+                ca += beatmapSets.Count() >= 100 ? "101" : beatmapSets.Count().ToString();
 
                 ca += "\n";
 
-                foreach (var set in result) ca += set.ToDirect();
+                foreach (var set in beatmapSets) ca += set.ToDirect();
             }
 
             Return:
-            _cache.Set(ha, ca, TimeSpan.FromMinutes(10));
+            cache.Set(ha, ca, TimeSpan.FromMinutes(10));
             return ca;
         }
     }

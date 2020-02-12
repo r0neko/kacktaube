@@ -17,7 +17,7 @@ namespace Pisstaube.CacheDb.Migrations
             modelBuilder
                 .HasAnnotation("ProductVersion", "2.2.4-servicing-10062");
 
-            modelBuilder.Entity("Pisstaube.CacheDb.Models.Beatmap", b =>
+            modelBuilder.Entity("olPisstaube.CacheDb.Models.Beatmap", b =>
             {
                 b.Property<int>("BeatmapId")
                     .ValueGeneratedOnAdd();
@@ -31,7 +31,7 @@ namespace Pisstaube.CacheDb.Migrations
                 b.ToTable("CacheBeatmaps");
             });
 
-            modelBuilder.Entity("Pisstaube.CacheDb.Models.CacheBeatmapSet", b =>
+            modelBuilder.Entity("olPisstaube.CacheDb.Models.CacheBeatmapSet", b =>
             {
                 b.Property<int>("SetId")
                     .ValueGeneratedOnAdd();
