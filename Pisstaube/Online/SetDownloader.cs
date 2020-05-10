@@ -75,7 +75,7 @@ namespace Pisstaube.Online
             {
                 if ((set = _dbContext.BeatmapSet
                         .FirstOrDefault(bmSet => bmSet.SetId == beatmapSetId && !bmSet.Disabled)) == null)
-                    throw new LegacyScoreParser.BeatmapNotFoundException();
+                    throw new LegacyScoreDecoder.BeatmapNotFoundException();
             }
                 
             var cacheStorage = _storage.GetStorageForDirectory("cache");

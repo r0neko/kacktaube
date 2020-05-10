@@ -133,10 +133,10 @@ namespace Pisstaube.Online.Crawler
                     
                     if (DbContext.BeatmapSet.Contains(beatmapSet))
                         DbContext.Set<BeatmapSet>().Update(beatmapSet);
-                    
+
                     if (DbContext.Entry(beatmapSet).State == EntityState.Detached)
                         DbContext.Set<BeatmapSet>().Add(beatmapSet);
-
+                    
                     DbContext.SaveChanges();
                 }
 

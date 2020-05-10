@@ -54,7 +54,7 @@ namespace Pisstaube.Controllers.cheesegull
             return true;
         }
 
-        // GET /api/search
+        // GET /api/cheesegull/search
         [HttpGet]
         public ActionResult<string> Get()
         {
@@ -87,7 +87,7 @@ namespace Pisstaube.Controllers.cheesegull
             if (_cache.TryGet(ha, out string ca))
                 return ca;
 
-            var result = _searchEngine.Search(query, amount, offset, status, (PlayMode) mode);
+            var result = _searchEngine.Search(query, amount, offset, status, mode);
             
             var beatmapSets = result as BeatmapSet[] ?? result.ToArray();
             if (beatmapSets.Length == 0) result = null; // Cheesegull logic ^^,

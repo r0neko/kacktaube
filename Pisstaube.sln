@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pisstaube", "Pisstaube\Pisstaube.csproj", "{0FD66543-DBA2-4CBE-8777-2C0DF1D39A1B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pisstaube.DatabaseRotator", "Pisstaube.DatabaseRotator\Pisstaube.DatabaseRotator.csproj", "{53997468-15EC-4F49-B2D8-10C2534AAEFD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,6 +14,10 @@ Global
 		{0FD66543-DBA2-4CBE-8777-2C0DF1D39A1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0FD66543-DBA2-4CBE-8777-2C0DF1D39A1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0FD66543-DBA2-4CBE-8777-2C0DF1D39A1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53997468-15EC-4F49-B2D8-10C2534AAEFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53997468-15EC-4F49-B2D8-10C2534AAEFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53997468-15EC-4F49-B2D8-10C2534AAEFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53997468-15EC-4F49-B2D8-10C2534AAEFD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection

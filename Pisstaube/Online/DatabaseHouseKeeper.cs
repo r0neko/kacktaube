@@ -51,6 +51,7 @@ namespace Pisstaube.Online
                                                            x.RankedStatus == BeatmapSetOnlineStatus.Approved &&
                                                            (x.LastChecked.Value + TimeSpan.FromDays(90))
                                                            .Subtract(DateTime.Now).TotalMilliseconds < 0)
+                            && !x.Disabled
                         );
                     
                     foreach (var beatmap in beatmaps)

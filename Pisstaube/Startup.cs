@@ -34,8 +34,8 @@ namespace Pisstaube
     {
         private readonly Storage _dataStorage = new NativeStorage("data");
         private readonly DatabaseContextFactory _osuContextFactory;
-        
-        public ILifetimeScope AutofacContainer { get; private set; }
+
+        private ILifetimeScope AutofacContainer { get; set; }
         
         // ReSharper disable once UnusedParameter.Local
         public Startup(IConfiguration configuration)
@@ -43,9 +43,6 @@ namespace Pisstaube
             _osuContextFactory = new DatabaseContextFactory(_dataStorage);
         }
         
-        
-        private readonly PisstaubeCacheDbContextFactory _cacheContextFactory;
-
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             services.AddOptions();
@@ -92,7 +89,7 @@ namespace Pisstaube
         }
 
 
-        private void MetricUpdater(IAPIProvider provider, SmartStorage smartStorage, ICrawler osuCrawler, DatabaseHouseKeeper houseKeeper)
+        private static void MetricUpdater(IAPIProvider provider, SmartStorage smartStorage, ICrawler osuCrawler, DatabaseHouseKeeper houseKeeper)
         {
             while (true)
             {
@@ -109,14 +106,14 @@ namespace Pisstaube
                     _ => Status.UNKNOWN
                 });
                 
-                DogStatsd.Set("smart_storage.free_space", smartStorage.DataDirectorySize / smartStorage.MaxSize);
+                DogStatsd.Set("smart_storage.free_space", smartStorage.DataDirectorySize / (double) smartStorage.MaxSize);
                 DogStatsd.Set("smart_storage.max_space", smartStorage.MaxSize);
                 
                 DogStatsd.Set("osu_crawler.latest_id", osuCrawler.LatestId);
                 DogStatsd.Set("house_keeper.to_update", houseKeeper.ToUpdate);
                 DogStatsd.Set("house_keeper.remaining", houseKeeper.Remaining);
 
-                Thread.Sleep(TimeSpan.FromMinutes(5));
+                Thread.Sleep(TimeSpan.FromMinutes(1));
             }
         }
 

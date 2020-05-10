@@ -30,8 +30,8 @@ namespace Pisstaube.Engine
                 .DefaultMappingFor<ElasticBeatmap>(m => m
                     .IdProperty(p => p.Id)
                 )
-                .RequestTimeout(new TimeSpan(0, 10, 0))
                 .EnableHttpCompression()
+                .RequestTimeout(new TimeSpan(0, 10, 0))
                 .DefaultIndex("pisstaube");
 
             _elasticClient = new ElasticClient(settings);
@@ -46,20 +46,21 @@ namespace Pisstaube.Engine
             var c = 0;
             while (c < elasticBeatmaps.Count)
             {
-                var truncatedBeatmaps = elasticBeatmaps.Skip(c).Take(100_000).ToList(); // Submit beatmaps in Chunks
+                var truncatedBeatmaps = elasticBeatmaps.Skip(c).Take(50_000).ToList(); // Submit beatmaps in Chunks
 
                 // Delete if exists.
-                Logger.LogPrint($"Deleting chunk {c + truncatedBeatmaps.Count} from ElasticSearch");
-                _elasticClient.DeleteMany(truncatedBeatmaps);
-                /* var res = // Ignore errors for DeleteMany.
-                if (!res.IsValid)
-                    Logger.LogPrint(res.DebugInformation);
-                */
+                var r = _elasticClient.DeleteByQuery<ElasticBeatmap>(q => q.Query(
+                        query => query
+                            .Terms(s => s.Field(f => f.Id).Terms(truncatedBeatmaps.Select(bm => bm.Id))))
+                );
+                if (!r.IsValid)
+                    Logger.LogPrint(r.DebugInformation, LoggingTarget.Network, LogLevel.Important);
                 
-                Logger.LogPrint($"Submitting chunk {c + truncatedBeatmaps.Count}");
-                var result = _elasticClient.IndexMany(elasticBeatmaps); // Index all truncated maps at once.
+                var result = _elasticClient.IndexMany(truncatedBeatmaps); // Index all truncated maps at once.
                 if (!result.IsValid)
                     Logger.LogPrint(result.DebugInformation, LoggingTarget.Network, LogLevel.Important);
+                
+                Logger.LogPrint($"{(c + truncatedBeatmaps.Count) / (double) elasticBeatmaps.Count:P}\t{c + truncatedBeatmaps.Count} of {elasticBeatmaps.Count}");
                 
                 c += truncatedBeatmaps.Count;
             }
@@ -74,7 +75,7 @@ namespace Pisstaube.Engine
             if (amount > 50 || amount <= -1)
                 amount = 50;
             
-            var result = _elasticClient.Search<ElasticBeatmap>(s =>
+            var result = _elasticClient.Search<ElasticBeatmap>(s => // Super complex query to search things. also super annoying
             {
                 var ret = s
                     .From(offset)
@@ -132,7 +133,6 @@ namespace Pisstaube.Engine
 
                                         return res;
                                     }
-
                                 )
                             )
                         );

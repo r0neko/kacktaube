@@ -77,7 +77,7 @@ namespace Pisstaube.Database.Models
         {
             if (info == null)
                 return null;
-
+            
             var cb = new ChildrenBeatmap
             {
                 BeatmapId = info.OnlineBeatmapID ?? -1,

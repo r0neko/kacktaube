@@ -29,7 +29,7 @@ namespace Pisstaube.Engine
             $"Artist: {Artist}\n" +
             $"Title: {Title}\n" +
             $"Creator: {Creator}\n" +
-            $"Tags: [{Tags.Join()}]\n" +
+            $"Tags: [{Tags.Join(", ")}]\n" +
             $"Mode: {Mode}\n" +
             $"DiffName: {DiffName}\n" +
             $"ApprovedDate: {ApprovedDate}";

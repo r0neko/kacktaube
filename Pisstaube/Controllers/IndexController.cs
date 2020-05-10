@@ -129,7 +129,7 @@ namespace Pisstaube.Controllers
             {
                 return StatusCode(503, "Osu! API is not available.");
             }
-            catch (LegacyScoreParser.BeatmapNotFoundException)
+            catch (LegacyScoreDecoder.BeatmapNotFoundException)
             {
                 return StatusCode(404, "Beatmap not Found!");
             }
@@ -185,7 +185,7 @@ namespace Pisstaube.Controllers
             {
                 return StatusCode(503, "Osu! API is not available.");
             }
-            catch (LegacyScoreParser.BeatmapNotFoundException)
+            catch (LegacyScoreDecoder.BeatmapNotFoundException)
             {
                 return StatusCode(404, "Beatmap not Found!");
             }
