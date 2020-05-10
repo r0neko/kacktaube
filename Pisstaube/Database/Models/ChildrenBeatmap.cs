@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 using osu.Game.Beatmaps;
 
 namespace Pisstaube.Database.Models
@@ -26,6 +27,7 @@ namespace Pisstaube.Database.Models
         [DataMember(Name = "ParentSetID")]
         public int ParentSetId { get; set; }
         
+        [JsonIgnore]
         [IgnoreDataMember]
         [ForeignKey(nameof(ParentSetId))]
         public BeatmapSet Parent { get; set; }

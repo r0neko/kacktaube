@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
+using Pisstaube.Utils;
 using StatsdClient;
 
 namespace Pisstaube.Controllers.v1
@@ -22,21 +24,20 @@ namespace Pisstaube.Controllers.v1
 
         // GET /api/v1/hash/:FileMd5
         [HttpGet("{hash}")]
-        public ActionResult<BeatmapSet> Get(string hash)
+        public ActionResult<string> Get(string hash)
         {
             DogStatsd.Increment("v1.beatmap.hash");
+            
             lock (_dbContextLock) {
                 var bm = _dbContext.Beatmaps.FirstOrDefault(cb => cb.FileMd5 == hash);
                 if (bm == null)
                     return null;
 
-                var set = _dbContext.BeatmapSet.FirstOrDefault(s => s.SetId == bm.ParentSetId);
-                if (set == null)
-                    return null;
+                var set = _dbContext.BeatmapSet
+                    .Include(s => s.ChildrenBeatmaps)
+                    .FirstOrDefault(s => s.SetId == bm.ParentSetId);
 
-                set.ChildrenBeatmaps = _dbContext.Beatmaps.Where(cb => cb.ParentSetId == set.SetId).ToList();
-                
-                return set;
+                return JsonUtil.Serialize(set);
             }
         }
     }
