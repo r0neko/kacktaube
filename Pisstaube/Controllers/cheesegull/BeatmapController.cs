@@ -120,7 +120,7 @@ namespace Pisstaube.Controllers.cheesegull
             }
         }
 
-        // GET /api/cheesegull/s/:BeatmapSetId
+        // GET /api/cheesegull/s/:BeatmapSetIds
         [HttpGet("s/{beatmapSetIds}")]
         public ActionResult<string> GetSet(string beatmapSetIds)
         {
