@@ -11,7 +11,7 @@ namespace Pisstaube.Engine
         void Index(IEnumerable<BeatmapSet> sets);
 
         IEnumerable<BeatmapSet> Search(string query,
-            int amount = 50,
+            int amount = 100,
             int offset = 0,
             BeatmapSetOnlineStatus? rankedStatus = null,
             PlayMode mode = PlayMode.All);

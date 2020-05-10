@@ -67,13 +67,13 @@ namespace Pisstaube.Engine
         }
         
         public IEnumerable<BeatmapSet> Search(string query,
-            int amount = 10,
+            int amount = 100,
             int offset = 0,
             BeatmapSetOnlineStatus? rankedStatus = null,
             PlayMode mode = PlayMode.All)
         {
-            if (amount > 10 || amount <= -1)
-                amount = 10;
+            if (amount > 100 || amount <= -1)
+                amount = 100;
             
             var result = _elasticClient.Search<ElasticBeatmap>(s => // Super complex query to search things. also super annoying
             {
