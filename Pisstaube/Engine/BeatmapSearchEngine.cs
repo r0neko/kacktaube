@@ -67,13 +67,13 @@ namespace Pisstaube.Engine
         }
         
         public IEnumerable<BeatmapSet> Search(string query,
-            int amount = 50,
+            int amount = 10,
             int offset = 0,
             BeatmapSetOnlineStatus? rankedStatus = null,
             PlayMode mode = PlayMode.All)
         {
-            if (amount > 50 || amount <= -1)
-                amount = 50;
+            if (amount > 10 || amount <= -1)
+                amount = 10;
             
             var result = _elasticClient.Search<ElasticBeatmap>(s => // Super complex query to search things. also super annoying
             {
@@ -124,8 +124,8 @@ namespace Pisstaube.Engine
                                         var res =
                                             should.Match(match => match.Field(p => p.Creator).Query(query).Boost(2)) ||
                                             should.Match(match => match.Field(p => p.Artist).Query(query).Boost(3)) ||
-                                            should.Match(match => match.Field(p => p.DiffName).Query(query).Boost(.9)) ||
-                                            should.Match(match => match.Field(p => p.Tags).Query(query).Boost(.9)) ||
+                                            should.Match(match => match.Field(p => p.DiffName).Query(query).Boost(1)) ||
+                                            should.Match(match => match.Field(p => p.Tags).Query(query).Boost(1)) ||
                                             should.Match(match => match.Field(p => p.Title).Query(query).Boost(3));
 
                                         if (query == "")
@@ -148,14 +148,24 @@ namespace Pisstaube.Engine
                 return null;
             }
             
+            Logger.LogPrint("Query done!");
+            
             var r = new List<BeatmapSet>();
             lock (_dbContextMutex)
             {
-                r.AddRange(from hit in result.Hits
-                    where hit != null
-                    select _dbContext.BeatmapSet.Include(o => o.ChildrenBeatmaps)
-                        .FirstOrDefault(o => o.SetId == hit.Source.Id));
+                var hits = 
+                    result.Hits
+                            .Where(h => h != null)
+                            .Select(h => int.Parse(h.Source.Id))
+                            .ToList();
+
+                var dbResult = _dbContext.BeatmapSet.Where(s => hits.Any(h => h == s.SetId))
+                    .Include(o => o.ChildrenBeatmaps);
+                
+                r.AddRange(dbResult);
             }
+            
+            Logger.LogPrint("Database done!");
             
             var sets = new List<BeatmapSet>();
             
@@ -171,6 +181,8 @@ namespace Pisstaube.Engine
                 
                 sets.Add(s);
             }
+            
+            Logger.LogPrint("Direct Fix done!");
 
             return sets;
         }

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore.Internal;
 using Nest;
-using osu.Game.Beatmaps;
 using Pisstaube.Database.Models;
 
 namespace Pisstaube.Engine
@@ -11,14 +10,14 @@ namespace Pisstaube.Engine
     [ElasticsearchType(IdProperty = nameof(Id))]
     public class ElasticBeatmap
     {
-        public int Id;
-        public BeatmapSetOnlineStatus RankedStatus;
+        public string Id;
+        public string RankedStatus;
 
         public string Artist;
         public string Title;
         public string Creator;
         public List<string> Tags;
-        public List<PlayMode> Mode;
+        public List<string> Mode;
         public List<string> DiffName;
 
         public double ApprovedDate;
@@ -38,11 +37,11 @@ namespace Pisstaube.Engine
         {
             var bm = new ElasticBeatmap
             {
-                Id = bmSet.SetId,
+                Id = bmSet.SetId.ToString(),
                 Artist = bmSet.Artist,
                 Creator = bmSet.Creator,
-                RankedStatus = bmSet.RankedStatus,
-                Mode = bmSet.ChildrenBeatmaps.Select(cb => cb.Mode).ToList(),
+                RankedStatus = bmSet.RankedStatus.ToString(),
+                Mode = bmSet.ChildrenBeatmaps.Select(cb => ((int) cb.Mode).ToString()).ToList(),
                 Tags = bmSet.Tags.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).ToList(),
                 Title = bmSet.Title,
                 DiffName = bmSet.ChildrenBeatmaps.Select(cb => cb.DiffName).ToList(),
