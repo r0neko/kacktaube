@@ -68,7 +68,7 @@ namespace Pisstaube.Controllers.cheesegull
             GetTryFromQuery(new[] {"amount", "a"}, 100, out var amount);
             GetTryFromQuery(new[] {"offset", "o"}, 0, out var offset);
             GetTryFromQuery(new[] {"page", "p"}, 0, out var page);
-            GetTryFromQuery(new[] {"mode", "m"}, PlayMode.All, out var mode);
+            GetTryFromQuery(new[] {"mode", "m"}, (int) PlayMode.All, out var mode);
             GetTryFromQuery(new[] {"status", "r"}, null, out int? r);
 
             BeatmapSetOnlineStatus? status = null;
@@ -87,7 +87,7 @@ namespace Pisstaube.Controllers.cheesegull
             if (_cache.TryGet(ha, out string ca))
                 return ca;
 
-            var result = _searchEngine.Search(query, amount, offset, status, mode);
+            var result = _searchEngine.Search(query, amount, offset, status, (PlayMode) mode);
             
             var beatmapSets = result as BeatmapSet[] ?? result.ToArray();
             if (beatmapSets.Length == 0) result = null; // Cheesegull logic ^^,

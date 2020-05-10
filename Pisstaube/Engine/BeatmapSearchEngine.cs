@@ -81,45 +81,44 @@ namespace Pisstaube.Engine
                     .From(offset)
                     .Size(amount);
 
-                if (query == "") {
+                if (query == string.Empty) {
                     ret = ret
                         .MinScore(0)
                         .Aggregations(a => a.Max("ApprovedDate", f => f.Field(v => v.ApprovedDate)));
                 }
                 else
                 {
-                    ret = ret.MinScore(5);
+                    ret = ret.MinScore(1);
                 }
                 ret = ret.Query(q =>
                             q.Bool(b => b
-                                .Must(must =>
-                                {
-                                    QueryContainer res = must;
-
-                                    if (rankedStatus != null)
+                                    .Filter(filter =>
                                     {
-                                        if (rankedStatus == BeatmapSetOnlineStatus.Ranked ||
-                                            rankedStatus == BeatmapSetOnlineStatus.Approved)
+                                        QueryContainer res = filter;
+                                    
+                                        if (rankedStatus != null)
                                         {
-                                            res = must.Term(term => term.Field(p => p.RankedStatus)
-                                                .Value(BeatmapSetOnlineStatus.Approved));
-                                            res |= must.Term(term => term.Field(p => p.RankedStatus)
-                                                .Value(BeatmapSetOnlineStatus.Ranked));
+                                            if (rankedStatus == BeatmapSetOnlineStatus.Ranked ||
+                                                rankedStatus == BeatmapSetOnlineStatus.Approved)
+                                            {
+                                                res = filter.Terms(terms => terms.Field(t => t.RankedStatus).Terms(
+                                                    BeatmapSetOnlineStatus.Approved,
+                                                    BeatmapSetOnlineStatus.Ranked));
+                                            }
+                                            else
+                                            {
+                                                res = filter.Term(term => term.Field(p => p.RankedStatus)
+                                                    .Value(rankedStatus));
+                                            }
                                         }
-                                        else
-                                        {
-                                            res = must.Term(term => term.Field(p => p.RankedStatus)
-                                                .Value(rankedStatus));
-                                        }
-                                    }
 
-                                    if (mode != PlayMode.All)
-                                        res &= must.Term(term => term.Field(p => p.Mode)
-                                            .Value(mode));
+                                        if (mode != PlayMode.All)
+                                            res &= filter.Term(term => term.Field(p => p.Mode)
+                                                .Value(mode));
 
-                                    return res;
-                                })
-                                .Should(should =>
+                                        return res;
+                                    })
+                                    .Should(should =>
                                     {
                                         var res =
                                             should.Match(match => match.Field(p => p.Creator).Query(query).Boost(2)) ||
@@ -137,7 +136,7 @@ namespace Pisstaube.Engine
                             )
                         );
                 
-                Logger.LogPrint(_elasticClient.RequestResponseSerializer.SerializeToString(ret), LoggingTarget.Network, LogLevel.Debug);
+                Logger.LogPrint(_elasticClient.RequestResponseSerializer.SerializeToString(ret, SerializationFormatting.Indented), LoggingTarget.Network, LogLevel.Debug);
                 
                 return ret;
             });
@@ -151,19 +150,20 @@ namespace Pisstaube.Engine
             Logger.LogPrint("Query done!");
             
             var r = new List<BeatmapSet>();
-            lock (_dbContextMutex)
-            {
-                var hits = 
-                    result.Hits
-                            .Where(h => h != null)
-                            .Select(h => int.Parse(h.Source.Id))
-                            .ToList();
+            if (result.Hits.Count > 0)
+                lock (_dbContextMutex)
+                {
+                    var hits = 
+                        result.Hits
+                                .Where(h => h != null)
+                                .Select(h => h.Source.Id)
+                                .ToList();
 
-                var dbResult = _dbContext.BeatmapSet.Where(s => hits.Any(h => h == s.SetId))
-                    .Include(o => o.ChildrenBeatmaps);
-                
-                r.AddRange(dbResult);
-            }
+                    var dbResult = _dbContext.BeatmapSet.Where(s => hits.Any(h => h == s.SetId))
+                        .Include(o => o.ChildrenBeatmaps);
+                    
+                    r.AddRange(dbResult);
+                }
             
             Logger.LogPrint("Database done!");
             

@@ -87,7 +87,7 @@ namespace Pisstaube.Database.Models
                 Parent = parent,
                 DiffName = info.Version,
                 FileMd5 = info.MD5Hash,
-                Mode = (PlayMode) info.RulesetID,
+                Mode = (PlayMode) (info.Ruleset?.ID ?? (int) PlayMode.Default),
                 Ar = info.BaseDifficulty.ApproachRate,
                 Od = info.BaseDifficulty.OverallDifficulty,
                 Cs = info.BaseDifficulty.CircleSize,

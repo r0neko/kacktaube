@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Extensions.Caching.Memory;
+using osu.Framework.Development;
 
 namespace Pisstaube.Allocation
 {
@@ -11,6 +12,9 @@ namespace Pisstaube.Allocation
         
         public void Set<T>(object key, T value, TimeSpan duration)
         {
+            if (DebugUtils.IsDebugBuild)
+                duration = TimeSpan.FromMilliseconds(1); // Disable cache for Debug
+            
             var cacheEntryOptions = new MemoryCacheEntryOptions()
                 .SetAbsoluteExpiration(duration);
 
