@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -147,31 +146,6 @@ namespace Pisstaube.Controllers.cheesegull
             catch (FormatException)
             {
                 return "parameter MUST be an int array! E.G 1;16";
-            }
-        }
-        
-        // GET /api/cheesegull/f/:Beatmap File Name
-        [HttpGet("f/{bmfileName}")]
-        public async Task<ActionResult<string>> GetBeatmapSetByFile(string bmFileName)
-        {
-            DogStatsd.Increment("beatmap.file.request");
-            var names = Regex.Split(bmFileName, @"(?<!\\);").Select(n => n.Replace("\\;", ";")).ToArray();
-
-            foreach (var name in names) Console.WriteLine(name);
-
-            // TODO: Add Cache as this is slow.
-            lock (_dbContext) {
-                var bms = (
-                    from b in _dbContext.Beatmaps
-                    join p in _dbContext.BeatmapSet on b.ParentSetId equals p.SetId
-                    where names.Any(s => s == Regex.Replace($"{p.Artist} - {p.Title} ({p.Creator}) [{b.DiffName}].osu",
-                                             @"[^\u0000-\u007F]+", string.Empty)) ||
-                          names.Any(s => s == Regex.Replace($"{p.Artist} - {p.Title} ({p.Creator}).osu",
-                                             @"[^\u0000-\u007F]+", string.Empty))
-                    select p
-                ).Include(s => s.ChildrenBeatmaps);
-                
-                return JsonUtil.Serialize(bms);
             }
         }
     }
