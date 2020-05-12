@@ -32,9 +32,8 @@ namespace Pisstaube
             var tracer = new Tracer(settings);
             
             Tracer.Instance = tracer;
-            
-            
-            
+
+
             if (!Directory.Exists("./data"))
                 Directory.CreateDirectory("data");
 

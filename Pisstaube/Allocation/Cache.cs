@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Microsoft.Extensions.Caching.Memory;
 using osu.Framework.Development;
 
@@ -6,12 +7,30 @@ namespace Pisstaube.Allocation
 {
     public class Cache
     {
-        private readonly IMemoryCache _memoryCache;
+        private IMemoryCache _memoryCache;
 
-        public Cache(IMemoryCache memoryCache) => _memoryCache = memoryCache;
+        public Cache() => CreateCache();
+
+
+        private void CreateCache()
+        {
+            _memoryCache?.Dispose();
+
+            _memoryCache = new MemoryCache(new MemoryCacheOptions());
+            
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
         
         public void Set<T>(object key, T value, TimeSpan duration)
         {
+            using var proc = Process.GetCurrentProcess();
+            if (proc.PrivateMemorySize64 / ((2 ^ 20) * 10024 / 100f) > 6144)
+            {
+                // straight up free cache
+                CreateCache();
+            }
+            
             if (DebugUtils.IsDebugBuild)
                 duration = TimeSpan.FromMilliseconds(1); // Disable cache for Debug
             
@@ -25,6 +44,7 @@ namespace Pisstaube.Allocation
         {
             if (!_memoryCache.TryGetValue(key, out var obj))
                 return null;
+            
             return (T) obj;
         }
 
