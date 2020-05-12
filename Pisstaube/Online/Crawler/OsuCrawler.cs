@@ -119,24 +119,10 @@ namespace Pisstaube.Online.Crawler
                         childrenBeatmap.FileMd5 = fileInfo.Item2;
                     }
                     
-                    var local = DbContext.Set<BeatmapSet>()
-                        .Local
-                        .FirstOrDefault(entry => entry.SetId.Equals(beatmapSet.SetId));
+                    beatmapSet.LastChecked = new DateTime();
                     
-                    if (local != null)
-                    {
-                        // detach
-                        DbContext.Entry(local).State = EntityState.Detached;
-
-                        DbContext.Set<BeatmapSet>().Update(beatmapSet);
-                    }
-                    
-                    if (DbContext.BeatmapSet.Contains(beatmapSet))
-                        DbContext.Set<BeatmapSet>().Update(beatmapSet);
-
-                    if (DbContext.Entry(beatmapSet).State == EntityState.Detached)
-                        DbContext.Set<BeatmapSet>().Add(beatmapSet);
-                    
+                    DbContext.BeatmapSet.AddOrUpdate(beatmapSet);
+  
                     DbContext.SaveChanges();
                 }
 
