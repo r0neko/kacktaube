@@ -93,7 +93,7 @@ namespace Pisstaube.Utils
             _cacheStorage = storage.GetStorageForDirectory("cache");
 
             var info = new DirectoryInfo(_cacheStorage.GetFullPath("./"));
-            DataDirectorySize = info.EnumerateFiles().Sum(file => file.Length);
+            DataDirectorySize = info.EnumerateFiles().AsParallel().Sum(file => file.Length);
         }
 
         private bool IsFitting(long size) => size + DataDirectorySize <= _maxSize;
