@@ -35,21 +35,23 @@ namespace Pisstaube.Online
                         .Where(
                             x => x.LastChecked != null && ((
                                                                x.RankedStatus == BeatmapSetOnlineStatus.None ||
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.Graveyard ||
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.Pending ||
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.Ranked ||
                                                                x.RankedStatus == BeatmapSetOnlineStatus.Loved
+                                                           ) &&
+                                                           (x.LastChecked.Value + TimeSpan.FromDays(90))
+                                                           .Subtract(DateTime.Now).TotalMilliseconds < 0 ||
+                                                           (
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.Pending ||
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.Qualified ||
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.WIP
                                                            ) &&
                                                            (x.LastChecked.Value + TimeSpan.FromDays(30))
                                                            .Subtract(DateTime.Now).TotalMilliseconds < 0 ||
                                                            (
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.Qualified ||
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.WIP
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.Graveyard ||
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.Ranked ||
+                                                               x.RankedStatus == BeatmapSetOnlineStatus.Approved
                                                            ) &&
-                                                           (x.LastChecked.Value + TimeSpan.FromDays(1))
-                                                           .Subtract(DateTime.Now).TotalMilliseconds < 0 ||
-                                                           x.RankedStatus == BeatmapSetOnlineStatus.Approved &&
-                                                           (x.LastChecked.Value + TimeSpan.FromDays(90))
+                                                           (x.LastChecked.Value + TimeSpan.FromDays(365))
                                                            .Subtract(DateTime.Now).TotalMilliseconds < 0)
                             && !x.Disabled
                         );
