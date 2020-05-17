@@ -95,9 +95,7 @@ namespace Pisstaube.Online
 
                 var req = new DownloadBeatmapSetRequest(new BeatmapSetInfo {OnlineBeatmapSetID = beatmapSetId},
                     !dlVideo);
-
-                // Video download is not supported, to much traffic. almost no one download videos anyways!
-
+                
                 var tmpFile = string.Empty;
                 req.Success += c => tmpFile = c;
                 _limiter.Limit();
@@ -129,9 +127,7 @@ namespace Pisstaube.Online
                     cachedMap.LastDownload = DateTime.Now;
                     db.Context.CacheBeatmapSet.Update(cachedMap);
                 }
-
-                //DogStatsd.Increment("beatmap.downloads");
-
+                
                 var cac = _ipfsCache.CacheFile("cache/" + bmFileId);
                 
                 return new DownloadMapResponse {
@@ -157,9 +153,7 @@ namespace Pisstaube.Online
                     cachedMap.LastDownload = DateTime.Now;
                     db.Context.CacheBeatmapSet.Update(cachedMap);
                 }
-
-            //DogStatsd.Increment("beatmap.downloads");
-
+            
             var cache = _ipfsCache.CacheFile("cache/" + bmFileId);
             
             return new DownloadMapResponse {

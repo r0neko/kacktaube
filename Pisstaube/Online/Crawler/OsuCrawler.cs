@@ -86,7 +86,7 @@ namespace Pisstaube.Online.Crawler
         private int _errorCount;
         public virtual async Task<bool> Crawl(int id)
         {
-            Logger.LogPrint($"Crawling BeatmapId {LatestId}...", LoggingTarget.Network, LogLevel.Debug);
+            Logger.LogPrint($"Crawling BeatmapId {id}...", LoggingTarget.Network, LogLevel.Debug);
             
             try
             {
@@ -118,8 +118,6 @@ namespace Pisstaube.Online.Crawler
 
                         childrenBeatmap.FileMd5 = fileInfo.Item2;
                     }
-                    
-                    beatmapSet.LastChecked = new DateTime();
                     
                     DbContext.BeatmapSet.AddOrUpdate(beatmapSet);
   

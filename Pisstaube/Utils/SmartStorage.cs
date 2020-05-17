@@ -109,42 +109,41 @@ namespace Pisstaube.Utils
 
                 Logger.LogPrint("Freeing Storage");
 
-                using (var db = _cache.GetForWrite())
+                using var db = _cache.GetForWrite();
+                
+                var map = db.Context.CacheBeatmapSet.FirstOrDefault(cbs =>
+                    (cbs.LastDownload - DateTime.Now).TotalDays < 7);
+                if (map != null)
                 {
-                    var map = db.Context.CacheBeatmapSet.FirstOrDefault(cbs =>
-                        (cbs.LastDownload - DateTime.Now).TotalDays < 7);
-                    if (map != null)
-                    {
-                        db.Context.CacheBeatmapSet.Remove(map);
-                        db.Context.SaveChanges();
-                        if (!_cacheStorage.Exists(map.SetId.ToString("x8")))
-                            continue;
+                    db.Context.CacheBeatmapSet.Remove(map);
+                    db.Context.SaveChanges();
+                    if (!_cacheStorage.Exists(map.SetId.ToString("x8")))
+                        continue;
 
-                        DataDirectorySize -= new FileInfo(_cacheStorage.GetFullPath(map.SetId.ToString("x8"))).Length;
-                        if (DataDirectorySize < 0)
-                            DataDirectorySize = 0;
+                    DataDirectorySize -= new FileInfo(_cacheStorage.GetFullPath(map.SetId.ToString("x8"))).Length;
+                    if (DataDirectorySize < 0)
+                        DataDirectorySize = 0;
 
-                        _cacheStorage.Delete(map.SetId.ToString("x8"));
-                        db.Context.SaveChanges();
-                    }
-                    else
-                    {
-                        map = db.Context.CacheBeatmapSet.OrderByDescending(cbs => cbs.LastDownload)
-                            .ThenByDescending(cbs => cbs.DownloadCount).FirstOrDefault();
+                    _cacheStorage.Delete(map.SetId.ToString("x8"));
+                    db.Context.SaveChanges();
+                }
+                else
+                {
+                    map = db.Context.CacheBeatmapSet.OrderByDescending(cbs => cbs.LastDownload)
+                        .ThenByDescending(cbs => cbs.DownloadCount).FirstOrDefault();
 
-                        if (map == null) continue;
-                        db.Context.CacheBeatmapSet.Remove(map);
-                        db.Context.SaveChanges();
-                        if (!_cacheStorage.Exists(map.SetId.ToString("x8")))
-                            continue;
+                    if (map == null) continue;
+                    db.Context.CacheBeatmapSet.Remove(map);
+                    db.Context.SaveChanges();
+                    if (!_cacheStorage.Exists(map.SetId.ToString("x8")))
+                        continue;
 
-                        DataDirectorySize -= new FileInfo(_cacheStorage.GetFullPath(map.SetId.ToString("x8"))).Length;
-                        if (DataDirectorySize < 0)
-                            DataDirectorySize = 0;
+                    DataDirectorySize -= new FileInfo(_cacheStorage.GetFullPath(map.SetId.ToString("x8"))).Length;
+                    if (DataDirectorySize < 0)
+                        DataDirectorySize = 0;
 
-                        _cacheStorage.Delete(map.SetId.ToString("x8"));
-                        db.Context.SaveChanges();
-                    }
+                    _cacheStorage.Delete(map.SetId.ToString("x8"));
+                    db.Context.SaveChanges();
                 }
             }
 

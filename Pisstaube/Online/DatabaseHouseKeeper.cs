@@ -32,27 +32,34 @@ namespace Pisstaube.Online
                     var beatmaps = _dbContext.BeatmapSet
                         .Where(x => !x.Disabled)
                         .AsEnumerable()
+                        .Where(x => x.LastChecked != null)
                         .Where(
-                            x => x.LastChecked != null && ((
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.None ||
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.Loved
-                                                           ) &&
-                                                           (x.LastChecked.Value + TimeSpan.FromDays(90))
-                                                           .Subtract(DateTime.Now).TotalMilliseconds < 0 ||
-                                                           (
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.Pending ||
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.Qualified ||
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.WIP
-                                                           ) &&
-                                                           (x.LastChecked.Value + TimeSpan.FromDays(30))
-                                                           .Subtract(DateTime.Now).TotalMilliseconds < 0 ||
-                                                           (
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.Graveyard ||
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.Ranked ||
-                                                               x.RankedStatus == BeatmapSetOnlineStatus.Approved
-                                                           ) &&
-                                                           (x.LastChecked.Value + TimeSpan.FromDays(365))
-                                                           .Subtract(DateTime.Now).TotalMilliseconds < 0)
+                            x => (
+                                         (
+                                             (
+                                                x.RankedStatus == BeatmapSetOnlineStatus.None       ||
+                                                x.RankedStatus == BeatmapSetOnlineStatus.Loved
+                                             ) &&
+                                             (x.LastChecked.Value + TimeSpan.FromDays(90)).Subtract(DateTime.Now).TotalMilliseconds < 0
+                                         ) ||
+                                         (
+                                             (
+                                                 x.RankedStatus == BeatmapSetOnlineStatus.Pending   ||
+                                                 x.RankedStatus == BeatmapSetOnlineStatus.Qualified ||
+                                                 x.RankedStatus == BeatmapSetOnlineStatus.WIP
+                                             ) &&
+                                             (x.LastChecked.Value + TimeSpan.FromDays(30)).Subtract(DateTime.Now).TotalMilliseconds < 0
+                                         ) ||
+                                         (
+                                             (
+                                                x.RankedStatus == BeatmapSetOnlineStatus.Graveyard  ||
+                                                x.RankedStatus == BeatmapSetOnlineStatus.Ranked     ||
+                                                x.RankedStatus == BeatmapSetOnlineStatus.Approved
+                                             ) &&
+                                             (x.LastChecked.Value + TimeSpan.FromDays(365)).Subtract(DateTime.Now).TotalMilliseconds < 0
+                                         )
+                                     )
+                                 
                             && !x.Disabled
                         );
                     
