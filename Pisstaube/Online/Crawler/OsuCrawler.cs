@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
 using osu.Game.Online.API;
@@ -25,8 +26,7 @@ namespace Pisstaube.Online.Crawler
     {
         private readonly Storage _storage;
         private readonly BeatmapDownloader _beatmapDownloader;
-        private object DbContextMutex { get; } = new object();
-        private PisstaubeDbContext DbContext { get; }
+        private DbContextPool<PisstaubeDbContext> _dbContextPool { get; }
         private IBeatmapSearchEngineProvider SearchEngine { get; }
         private IAPIProvider ApiProvider { get; }
         private RequestLimiter RequestLimiter { get; }
@@ -41,20 +41,14 @@ namespace Pisstaube.Online.Crawler
         protected CancellationToken CancellationToken { get; private set; }
         
         public OsuCrawler(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider,
-            IBeatmapSearchEngineProvider searchEngine, BeatmapDownloader beatmapDownloader)
+            IBeatmapSearchEngineProvider searchEngine, BeatmapDownloader beatmapDownloader, DbContextPool<PisstaubeDbContext> dbContextPool)
         {
             _storage = storage;
             _beatmapDownloader = beatmapDownloader;
-            DbContext = new PisstaubeDbContext();
+            _dbContextPool = dbContextPool;
             SearchEngine = searchEngine;
             ApiProvider = apiProvider;
             RequestLimiter = requestLimiter;
-
-            LatestId = DbContext.BeatmapSet
-                           .OrderByDescending(bs => bs.SetId)
-                           .Take(1)
-                           .ToList()
-                           .FirstOrDefault()?.SetId + 1 ?? 1;
         }
 
         public void Start()
@@ -86,6 +80,7 @@ namespace Pisstaube.Online.Crawler
         private int _errorCount;
         public virtual async Task<bool> Crawl(int id)
         {
+            var dbContext = _dbContextPool.Rent();
             Logger.LogPrint($"Crawling BeatmapId {id}...", LoggingTarget.Network, LogLevel.Debug);
             
             try
@@ -95,13 +90,17 @@ namespace Pisstaube.Online.Crawler
 
                 var beatmapSetInfo = beatmapSetRequest.Result;
 
-                if (beatmapSetInfo == null)
+                if (beatmapSetInfo == null) {
+                    _errorCount++;
                     return false;
+                }
 
                 var beatmapSet = BeatmapSet.FromBeatmapSetInfo(beatmapSetInfo.ToBeatmapSet());
 
-                if (beatmapSet == null)
+                if (beatmapSet == null){
+                    _errorCount++;
                     return false;
+                }
 
                 var cacheStorage = _storage.GetStorageForDirectory("cache");
                 
@@ -110,19 +109,16 @@ namespace Pisstaube.Online.Crawler
                 if (cacheStorage.Exists(beatmapSet.SetId.ToString("x8")))
                     cacheStorage.Delete(beatmapSet.SetId.ToString("x8"));
 
-                lock (DbContextMutex)
+                foreach (var childrenBeatmap in beatmapSet.ChildrenBeatmaps)
                 {
-                    foreach (var childrenBeatmap in beatmapSet.ChildrenBeatmaps)
-                    {
-                        var fileInfo = _beatmapDownloader.Download(childrenBeatmap);
+                    var fileInfo = _beatmapDownloader.Download(childrenBeatmap);
 
-                        childrenBeatmap.FileMd5 = fileInfo.Item2;
-                    }
-                    
-                    DbContext.BeatmapSet.AddOrUpdate(beatmapSet);
-  
-                    DbContext.SaveChanges();
+                    childrenBeatmap.FileMd5 = fileInfo.Item2;
                 }
+                    
+                dbContext.BeatmapSet.AddOrUpdate(beatmapSet);
+  
+                await dbContext.SaveChangesAsync();
 
                 SearchEngine.Index(new []{ beatmapSet });
 
@@ -136,7 +132,6 @@ namespace Pisstaube.Online.Crawler
             } 
             catch (Exception e) // Everything else, redo the Crawl.
             {
-                DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
                 Logger.Error(e, "Unknown error during crawling occured!");
 
                 SentrySdk.CaptureException(e);
@@ -149,30 +144,49 @@ namespace Pisstaube.Online.Crawler
 
                 _errorCount++;
                 return await Crawl(id);
+            } finally {
+                _dbContextPool.Return(dbContext);
             }
         }
         
         protected virtual void ThreadWorker()
         {
-            while (!CancellationToken.IsCancellationRequested)
-            {
-                if (_errorCount > 1024)
+            var dbContext = _dbContextPool.Rent();
+            try {
+                LatestId = dbContext.BeatmapSet
+                    .OrderByDescending(bs => bs.SetId)
+                    .Take(1)
+                    .ToList()
+                    .FirstOrDefault()?.SetId + 1 ?? 1;
+
+                while (!CancellationToken.IsCancellationRequested)
                 {
-                    Logger.LogPrint("Error count too high! will continue tomorrow...", LoggingTarget.Network, LogLevel.Important);
-                    Thread.Sleep(TimeSpan.FromDays(1));
-                }
-                if (Tasks.Count > 32) {
-                    foreach (var task in Tasks) // wait for all tasks
+                    if (_errorCount > 1024)
                     {
-                        task.Wait(CancellationToken);
+                        LatestId = dbContext.BeatmapSet
+                            .OrderByDescending(bs => bs.SetId)
+                            .Take(1)
+                            .ToList()
+                            .FirstOrDefault()?.SetId + 1 ?? 1;
+
+                        _dbContextPool.Return(dbContext);
+
+                        Logger.LogPrint("Error count too high! will continue tomorrow...", LoggingTarget.Network, LogLevel.Important);
+                        Thread.Sleep(TimeSpan.FromDays(1));
+
+                        dbContext = _dbContextPool.Rent();
+                    }
+                    if (Tasks.Count > 32) {
+                        Task.WaitAll(Tasks.ToArray(), CancellationToken); // wait for all tasks
+                        Tasks.Clear(); // Remove all previous tasks.
                     }
                     
-                    Tasks.Clear(); // Remove all previous tasks.
-                }
-                
-                RequestLimiter.Limit();
+                    RequestLimiter.Limit();
 
-                Tasks.Add(Crawl(LatestId++));
+                    Tasks.Add(Crawl(LatestId++));
+                }
+            } finally {
+                _dbContextPool.Return(dbContext);
             }
         }
 
@@ -180,7 +194,6 @@ namespace Pisstaube.Online.Crawler
         {
             Stop();
             _cancellationTokenSource?.Dispose();
-            DbContext?.Dispose();
         }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Internal;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
 using osu.Game.Beatmaps;
@@ -17,7 +19,7 @@ namespace Pisstaube.Online
     {
         private readonly RequestLimiter _requestLimiter;
         private readonly IAPIProvider _apiProvider;
-        private readonly PisstaubeDbContext _dbContext;
+        private readonly DbContextPool<PisstaubeDbContext> _dbContextPool;
         private readonly IBeatmapSearchEngineProvider _searchEngine;
         
         public int ToUpdate { get; private set; }
@@ -27,9 +29,10 @@ namespace Pisstaube.Online
         {
             while (!CancellationToken.IsCancellationRequested)
             {
+                var dbContext = _dbContextPool.Rent();
                 try
                 {
-                    var beatmaps = _dbContext.BeatmapSet
+                    var beatmaps = dbContext.BeatmapSet
                         .Where(x => !x.Disabled)
                         .AsEnumerable()
                         .Where(x => x.LastChecked != null)
@@ -66,11 +69,7 @@ namespace Pisstaube.Online
                     foreach (var beatmap in beatmaps)
                     {
                         if (Tasks.Count > 128) {
-                            foreach (var task in Tasks) // wait for all tasks
-                            {
-                                task.Wait(CancellationToken);
-                            }
-                        
+                            Task.WaitAll(Tasks.ToArray(), CancellationToken); // wait for all tasks                        
                             Tasks.Clear(); // Remove all previous tasks.
                         }
                         
@@ -83,17 +82,19 @@ namespace Pisstaube.Online
                 {
                     Logger.Error(e, "an Unknown error occured during HouseKeeping", LoggingTarget.Database);
                     SentrySdk.CaptureException(e);
+                } finally {
+                    _dbContextPool.Return(dbContext);
                 }
                 
                 Thread.Sleep(TimeSpan.FromHours(8)); // Update every 8 hours...
             }
         }
 
-        public DatabaseHouseKeeper(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider, IBeatmapSearchEngineProvider searchEngine, BeatmapDownloader beatmapDownloader) : base(storage, requestLimiter, apiProvider, searchEngine, beatmapDownloader)
+        public DatabaseHouseKeeper(Storage storage, RequestLimiter requestLimiter, IAPIProvider apiProvider, IBeatmapSearchEngineProvider searchEngine, BeatmapDownloader beatmapDownloader, DbContextPool<PisstaubeDbContext> dbContextPool) : base(storage, requestLimiter, apiProvider, searchEngine, beatmapDownloader, dbContextPool)
         {
             _requestLimiter = requestLimiter;
             _apiProvider = apiProvider;
-            _dbContext = new PisstaubeDbContext();
+            _dbContextPool = dbContextPool;
             _searchEngine = searchEngine;
         }
     }

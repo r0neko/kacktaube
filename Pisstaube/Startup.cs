@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -26,6 +27,8 @@ using Pisstaube.Engine;
 using Pisstaube.Online;
 using Pisstaube.Online.Crawler;
 using Pisstaube.Utils;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Pomelo.EntityFrameworkCore.MySql.Storage;
 using StatsdClient;
 
 namespace Pisstaube
@@ -58,6 +61,22 @@ namespace Pisstaube
                 .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
             
             services.AddRouting();
+            services.AddDbContextPool<PisstaubeDbContext>(optionsBuilder => {
+                var host = Environment.GetEnvironmentVariable("MARIADB_HOST");
+                var port = Environment.GetEnvironmentVariable("MARIADB_PORT");
+                var username = Environment.GetEnvironmentVariable("MARIADB_USERNAME");
+                var password = Environment.GetEnvironmentVariable("MARIADB_PASSWORD");
+                var db = Environment.GetEnvironmentVariable("MARIADB_DATABASE");
+
+                optionsBuilder.UseMySql(
+                    $"Server={host};Database={db};User={username};Password={password};Port={port};CharSet=utf8mb4;SslMode=none;",
+                    mysqlOptions =>
+                    {
+                        mysqlOptions.ServerVersion(new Version(10, 4, 12), ServerType.MariaDb);
+                        mysqlOptions.CharSet(CharSet.Utf8Mb4);
+                    }
+                );
+            });
             
             var builder = new ContainerBuilder();
             
@@ -72,7 +91,6 @@ namespace Pisstaube
             builder.RegisterInstance(_dataStorage).As<Storage>();
             builder.RegisterInstance(_osuContextFactory).As<IDatabaseContextFactory>();
             builder.RegisterType<FileStore>();
-            builder.RegisterType<PisstaubeDbContext>().InstancePerDependency();
             builder.RegisterType<PisstaubeCacheDbContextFactory>().AsSelf();
             builder.RegisterType<SetDownloader>().AsSelf();
             builder.RegisterType<SmartStorage>().AsSelf();
@@ -122,12 +140,14 @@ namespace Pisstaube
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
             ICrawler crawler, IAPIProvider apiProvider, DatabaseHouseKeeper houseKeeper,
             PisstaubeCacheDbContextFactory cacheDbContextFactory, IBeatmapSearchEngineProvider searchEngine,
-            SmartStorage smartStorage)
+            SmartStorage smartStorage, PisstaubeDbContext dbContext)
         {
             Logger.Enabled = true;
             Logger.Level = LogLevel.Debug;
             Logger.GameIdentifier = "Pisstaube";
             Logger.Storage = _dataStorage.GetStorageForDirectory("logs");
+
+            dbContext.Database.Migrate();
             
             while (!searchEngine.IsConnected)
             {
