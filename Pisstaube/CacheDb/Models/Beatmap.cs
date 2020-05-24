@@ -7,5 +7,6 @@ namespace Pisstaube.CacheDb.Models
         [Key] [Required] public int BeatmapId { get; set; }
         public string Hash { get; set; }
         public string FileMd5 { get; set; }
+        public string File { get; set; }
     }
 }

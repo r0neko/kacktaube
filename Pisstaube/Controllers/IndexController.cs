@@ -73,14 +73,14 @@ namespace Pisstaube.Controllers
             return File(_fileStorage.GetStream(info.StoragePath), "application/octet-stream", hash);
         }
 
-        // GET /osu/:fileMd5
-        [HttpGet("osu/{fileMd5}")]
-        public ActionResult GetBeatmap(string fileMd5)
+        // GET /osu/:map
+        [HttpGet("osu/{map}")]
+        public ActionResult GetBeatmap(string mapFile)
         {
             DogStatsd.Increment("osu.beatmap.download");
             var hash = _cache.Get()
                 .CacheBeatmaps
-                .Where(bm => bm.FileMd5 == fileMd5)
+                .Where(bm => bm.FileMd5 == mapFile || bm.File == mapFile)
                 .Select(bm => bm.Hash)
                 .FirstOrDefault();
 
@@ -88,11 +88,17 @@ namespace Pisstaube.Controllers
             if (hash == null)
                 lock (_dbContextLock)
                 {
-                    foreach (var map in _dbContext.Beatmaps.Where(bm => bm.FileMd5 == fileMd5))
+                    foreach (var map in _dbContext.Beatmaps.Where(bm => bm.FileMd5 == mapFile || bm.File == mapFile))
                     {
                         var (fileInfo, pFileMd5) = _downloader.Download(map);
 
                         map.FileMd5 = pFileMd5;
+                        info = fileInfo;
+                    }
+
+                    if (info == null) {
+                        var (fileInfo, _) = _downloader.Download(mapFile);
+
                         info = fileInfo;
                     }
                 }

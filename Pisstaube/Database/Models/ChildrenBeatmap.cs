@@ -38,6 +38,10 @@ namespace Pisstaube.Database.Models
         [DataMember(Name = "FileMD5")]
         public string FileMd5 { get; set; }
 
+        [JsonIgnore]
+        [IgnoreDataMember]
+        public string File { get; set; }
+
         [DataMember(Name = "Mode")]
         public PlayMode Mode { get; set; }
         
@@ -87,6 +91,7 @@ namespace Pisstaube.Database.Models
                 Parent = parent,
                 DiffName = info.Version,
                 FileMd5 = info.MD5Hash,
+                File = $"{parent.Artist} - {parent.Title} ({parent.Creator}) [{info.Version}].osu",
                 Mode = (PlayMode) (info.Ruleset?.ID ?? (int) PlayMode.Default),
                 Ar = info.BaseDifficulty.ApproachRate,
                 Od = info.BaseDifficulty.OverallDifficulty,
