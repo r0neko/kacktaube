@@ -73,8 +73,8 @@ namespace Pisstaube.Controllers
             return File(_fileStorage.GetStream(info.StoragePath), "application/octet-stream", hash);
         }
 
-        // GET /osu/:map
-        [HttpGet("osu/{map}")]
+        // GET /osu/:mapFile
+        [HttpGet("osu/{mapFile}")]
         public ActionResult GetBeatmap(string mapFile)
         {
             DogStatsd.Increment("osu.beatmap.download");
