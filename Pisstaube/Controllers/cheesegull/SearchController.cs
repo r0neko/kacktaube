@@ -63,6 +63,7 @@ namespace Pisstaube.Controllers.cheesegull
                 return Unauthorized("Searches are currently Disabled!");
 
             var raw = Request.Query.ContainsKey("raw");
+            var ruri = Request.Query.ContainsKey("ruri");
 
             GetTryFromQuery(new[] {"query", "q"}, string.Empty, out var query);
             GetTryFromQuery(new[] {"amount", "a"}, 100, out var amount);
@@ -70,6 +71,18 @@ namespace Pisstaube.Controllers.cheesegull
             GetTryFromQuery(new[] {"page", "p"}, 0, out var page);
             GetTryFromQuery(new[] {"mode", "m"}, (int) PlayMode.All, out var mode);
             GetTryFromQuery(new[] {"status", "r"}, null, out int? r);
+            
+            if (ruri == true && r.HasValue) {
+                r = r switch {
+                    4 => (int) BeatmapSetOnlineStatus.None,
+                    0 => (int) BeatmapSetOnlineStatus.Ranked,
+                    7 => (int) BeatmapSetOnlineStatus.Ranked,
+                    8 => (int) BeatmapSetOnlineStatus.Loved,
+                    3 => (int) BeatmapSetOnlineStatus.Qualified,
+                    2 => (int) BeatmapSetOnlineStatus.Pending,
+                    5 => (int) BeatmapSetOnlineStatus.Graveyard,
+                };
+            }
 
             BeatmapSetOnlineStatus? status = null;
             if (r != null)
