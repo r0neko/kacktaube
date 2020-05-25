@@ -13,7 +13,7 @@ namespace Pisstaube.Database.Models
         Taiko,
         CatchTheBeat,
         Mania,
-        All
+        All = -1
     }
     
     [Serializable]
