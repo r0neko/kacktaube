@@ -92,10 +92,9 @@ namespace Pisstaube.Engine
                 {
                     ret = ret.MinScore(1);
                 }
-                if(search == MapSearchType.Newest)
-                {
-                    ret = ret.Sort(a => a.Descending("ApprovedDate"));
-                }
+
+                if(search == MapSearchType.Newest) ret = ret.Aggregations(a => a.Max("ApprovedDate", f => f.Field(v => v.ApprovedDate)));
+
                 ret = ret.Query(q =>
                             q.Bool(b => b
                                     .Filter(filter =>
@@ -138,7 +137,7 @@ namespace Pisstaube.Engine
 
                                         return res;
                                     }
-                                )
+                                    )
                             )
                         );
                 
@@ -172,7 +171,7 @@ namespace Pisstaube.Engine
                 }
             
             Logger.LogPrint("Database done!");
-            
+
             var sets = new List<BeatmapSet>();
             
             foreach (var s in r)
