@@ -16,6 +16,6 @@ namespace Pisstaube.Engine
             int offset = 0,
             BeatmapSetOnlineStatus? rankedStatus = null,
             PlayMode mode = PlayMode.All,
-            MapSearchType search = MapSearchType.Normal);
+            MapSearchType? search = MapSearchType.Normal);
     }
 }

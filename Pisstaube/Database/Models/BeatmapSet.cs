@@ -128,7 +128,7 @@ namespace Pisstaube.Database.Models
                          $"{Convert.ToInt32(HasVideo)}|" +
                          $"{Convert.ToInt32(HasVideo) * 4321}|";
 
-            retStr = ChildrenBeatmaps.Aggregate(retStr, (current, cb) => current + cb.ToDirect());
+            retStr = ChildrenBeatmaps.OrderByDescending(x => x.DifficultyRating).Aggregate(retStr, (current, cb) => current + cb.ToDirect());
 
             return retStr.TrimEnd(',') + "|\r\n";
         }

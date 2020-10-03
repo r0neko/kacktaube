@@ -72,7 +72,7 @@ namespace Pisstaube.Engine
             int offset = 0,
             BeatmapSetOnlineStatus? rankedStatus = null,
             PlayMode mode = PlayMode.All,
-            MapSearchType search = MapSearchType.Normal)
+            MapSearchType? search = MapSearchType.Normal)
         {
             if (amount > 100 || amount <= -1)
                 amount = 100;
