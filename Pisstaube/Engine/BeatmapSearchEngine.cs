@@ -136,7 +136,7 @@ namespace Pisstaube.Engine
                                             should.Match(match => match.Field(p => p.Tags).Query(query).Boost(1)) ||
                                             should.Match(match => match.Field(p => p.Title).Query(query).Boost(3));
 
-                                        if (query == "")
+                                        if (search != MapSearchType.Normal || query == "")
                                             res = should;
 
                                         return res;
