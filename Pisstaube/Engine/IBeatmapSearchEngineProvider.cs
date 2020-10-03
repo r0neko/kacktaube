@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using osu.Game.Beatmaps;
 using Pisstaube.Database.Models;
+using Pisstaube.Utils;
 
 namespace Pisstaube.Engine
 {
@@ -14,6 +15,7 @@ namespace Pisstaube.Engine
             int amount = 100,
             int offset = 0,
             BeatmapSetOnlineStatus? rankedStatus = null,
-            PlayMode mode = PlayMode.All);
+            PlayMode mode = PlayMode.All,
+            MapSearchType search = MapSearchType.Normal);
     }
 }

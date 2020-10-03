@@ -90,17 +90,17 @@ namespace Pisstaube.Controllers.cheesegull
 
             offset += 100 * page;
 
-            if (query.ToLower().Equals("newest") ||
-                query.ToLower().Equals("top rated") || // TODO: Implementing this
-                query.ToLower().Equals("most played")) // and this
-                query = "";
+            MapSearchType searchType = MapSearchType.Normal;
+
+            if (query.ToLower().Equals("newest")) searchType = MapSearchType.Newest;
+            else if (query.ToLower().Equals("most played")) searchType = MapSearchType.TopPlays;
 
             var ha = query + amount + offset + status + mode + page + raw;
 
             if (_cache.TryGet(ha, out string ca))
                 return ca;
 
-            var result = _searchEngine.Search(query, amount, offset, status, (PlayMode) mode);
+            var result = _searchEngine.Search(query, amount, offset, status, (PlayMode) mode, searchType);
             
             var beatmapSets = result as BeatmapSet[] ?? result.ToArray();
             if (beatmapSets.Length == 0) result = null; // Cheesegull logic ^^,

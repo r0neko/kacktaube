@@ -9,6 +9,7 @@ using osu.Game.Beatmaps;
 using Pisstaube.Database;
 using Pisstaube.Database.Models;
 using LogLevel = osu.Framework.Logging.LogLevel;
+using Pisstaube.Utils;
 
 namespace Pisstaube.Engine
 {
@@ -70,7 +71,8 @@ namespace Pisstaube.Engine
             int amount = 100,
             int offset = 0,
             BeatmapSetOnlineStatus? rankedStatus = null,
-            PlayMode mode = PlayMode.All)
+            PlayMode mode = PlayMode.All,
+            MapSearchType search = MapSearchType.Normal)
         {
             if (amount > 100 || amount <= -1)
                 amount = 100;
@@ -89,6 +91,10 @@ namespace Pisstaube.Engine
                 else
                 {
                     ret = ret.MinScore(1);
+                }
+                if(search == MapSearchType.Newest)
+                {
+                    ret = ret.Sort(a => a.Descending("ApprovedDate"));
                 }
                 ret = ret.Query(q =>
                             q.Bool(b => b
