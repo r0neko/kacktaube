@@ -83,17 +83,21 @@ namespace Pisstaube.Engine
                     .From(offset)
                     .Size(amount);
 
-                if (query == string.Empty) {
+                if (search == MapSearchType.Newest || query == string.Empty) {
                     ret = ret
                         .MinScore(0)
                         .Aggregations(a => a.Max("ApprovedDate", f => f.Field(v => v.ApprovedDate)));
+                }
+                else if (search == MapSearchType.TopPlays)
+                {
+                    ret = ret
+                        .MinScore(0)
+                        .Aggregations(a => a.Max("TotalPlays", f => f.Field(v => v.TotalPlays)));
                 }
                 else
                 {
                     ret = ret.MinScore(1);
                 }
-
-                if(search == MapSearchType.Newest) ret = ret.Aggregations(a => a.Max("ApprovedDate", f => f.Field(v => v.ApprovedDate)));
 
                 ret = ret.Query(q =>
                             q.Bool(b => b

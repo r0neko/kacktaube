@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore.Internal;
 using Nest;
 using osu.Game.Beatmaps;
+using Pisstaube.Database;
 using Pisstaube.Database.Models;
 
 namespace Pisstaube.Engine
@@ -11,6 +12,7 @@ namespace Pisstaube.Engine
     [ElasticsearchType(IdProperty = nameof(Id))]
     public class ElasticBeatmap
     {
+        private readonly PisstaubeDbContext _dbContext;
         public int Id;
         public BeatmapSetOnlineStatus RankedStatus;
 
@@ -33,6 +35,16 @@ namespace Pisstaube.Engine
             $"Mode: {Mode}\n" +
             $"DiffName: {DiffName}\n" +
             $"ApprovedDate: {ApprovedDate}";
+
+        public int TotalPlays
+        {
+            get
+            {
+                var x = _dbContext.BeatmapSet.Find(Id).ChildrenBeatmaps.OrderByDescending(x => x.Playcount).ToList();
+                if(x != null && x.Count > 0) return x[0].Playcount;
+                return 0;
+            }
+        }
 
         public static ElasticBeatmap GetElasticBeatmap(BeatmapSet bmSet)
         {
