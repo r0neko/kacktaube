@@ -129,15 +129,14 @@ namespace Pisstaube.Engine
                                     })
                                     .Should(should =>
                                     {
+                                        if (search == MapSearchType.TopPlays || search == MapSearchType.Newest || query == "") return should;
+
                                         var res =
                                             should.Match(match => match.Field(p => p.Creator).Query(query).Boost(2)) ||
                                             should.Match(match => match.Field(p => p.Artist).Query(query).Boost(3)) ||
                                             should.Match(match => match.Field(p => p.DiffName).Query(query).Boost(1)) ||
                                             should.Match(match => match.Field(p => p.Tags).Query(query).Boost(1)) ||
                                             should.Match(match => match.Field(p => p.Title).Query(query).Boost(3));
-
-                                        if (search != MapSearchType.Normal || query == "")
-                                            res = should;
 
                                         return res;
                                     }
